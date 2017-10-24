@@ -18,11 +18,6 @@ import matplotlib.image as mpimg
 import argparse
 import xml.etree.cElementTree as etree
 
-
-
-#from cv_utils import common, drawing
-#from darkflow import parsers
-
 ##################################################################################
 ##########       VISUALISATION TOOLS FOR BOUNDING BOXES AND LABELS   #############
 #################################################################################
@@ -56,7 +51,6 @@ def get_filename(path):
     return os.path.splitext(with_extension)[0]
 
 def show_image(image):
-    print("image")
     cv2.imshow('Image', image)
     while cv2.getWindowProperty('Image', 0) >= 0 :
         val = cv2.waitKey(100)
@@ -91,11 +85,17 @@ def load_image(filename, flags=-1):
         return None
     return cv2.imread(filename, flags)
 
+def draw_age_gender(filename, bound_boxes, gender=None, age=None):
+    for bound_box in bound_boxes:
+        result = draw_bounding_box(filename,image, bound_box, center_with_size=False)
+        plt.title("{}, {}".format(int(age),"M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F"))
+        plt.imshow(result)
+        plt.show()
+
 def show_bound_box(filename, bound_boxes, gender=None, age=None):
     image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
         return
-    
     if age == None:
         #for bound in  bound_box:
         if type(bound_boxes) != int:
@@ -103,15 +103,11 @@ def show_bound_box(filename, bound_boxes, gender=None, age=None):
                 result = draw_bounding_box(filename,image, bound_box, center_with_size=False)
         else:
              result = draw_bounding_box(filename,image, bound_boxes, center_with_size=False)
-        show_image(result)
-        #plt.imshow(result)
-        #plt.show()
-    else:
-        for bound_box in bound_boxes:
-            result = draw_bounding_box(filename,image, bound_box, center_with_size=False)
-        plt.title("{}, {}".format(int(age),"M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F"))
+        #show_image(result)
         plt.imshow(result)
         plt.show()
+    else:
+        draw_age_gender(filename, bound_boxes, gender, age)
     
 def parse_from_pascal_voc_format(filename):
     """
@@ -174,17 +170,11 @@ def parse_json_annotation(filename):
                 return  (bdn_bxs, gender, age)
     f.close()
     return  bdn_bxs
-   
-def process_single(annotations_folder, images_folder, index):
+def process_xml_ann(annotations_folder, images, index):
     bounding_box = []
     gender = None
     age = None
-    if images_folder == "datasets/INRIA/images/":
-        images = sorted(list_files(images_folder, '.png'))
-    else:
-        images = sorted(list_files(images_folder, '.jpg'))
     annotations_xml = sorted(list_files(annotations_folder, '.xml'))
-    annotations_json = sorted(list_files(annotations_folder, '.json'))
     if annotations_xml != []:
         annfile = annotations_folder+get_filename(images[index])+".xml"
         if os.path.isfile(annfile) and os.path.isfile(images[index]):
@@ -193,7 +183,12 @@ def process_single(annotations_folder, images_folder, index):
             else:
                 bounding_box, gender, age = parse_from_pascal_voc_format(annfile)
             show_bound_box(images[index], bounding_box, gender, age)
-    print(annotations_json )
+
+def process_json_ann(annotations_folder, images, index):
+    bounding_box = []
+    gender = None
+    age = None
+    annotations_json = sorted(list_files(annotations_folder, '.json'))
     if annotations_json != []:
         annfile = annotations_folder+get_filename(images[index])+".json"
         if os.path.isfile(annfile) and os.path.isfile(images[index]):
@@ -203,13 +198,21 @@ def process_single(annotations_folder, images_folder, index):
                 bounding_box, gender, age = parse_json_annotation( annfile)
             show_bound_box(images[index], bounding_box, gender, age)
             
+def process_single(annotations_folder, images_folder, index):
+    if images_folder == "datasets/INRIA/images/":
+        images = sorted(list_files(images_folder, '.png'))
+    else:
+        images = sorted(list_files(images_folder, '.jpg'))
+    process_xml_ann(annotations_folder, images, index)
+    process_json_ann(annotations_folder, images, index)
+
 def _process_dir(annotations_folder, images_folder, index=-1):
     filescount = len(os.listdir(annotations_folder))
     if index == -1:
         for i in range(filescount):
             process_single(images_folder,annotations_folder, i)
     else:
-        process_single(images_folder,annotations_folder,  index)
+        process_single(annotations_folder,images_folder,  index)
 
 def main():      
     
@@ -221,16 +224,8 @@ def main():
         else:
             index = int(args['index']) if args['index'] else 0  
             if args['ann_dir'] and os.path.exists(args['ann_dir']):
-                print(args['images_dir'], args['ann_dir'], index)
                 _process_dir(args['ann_dir'], args['images_dir'], index)
-    #_process_dir("datasets/_VOC/train/annotations/", "datasets/_VOC/train/images/", -1)
-    #_process_dir("datasets/JSON_INRIA/", "datasets/INRIA/images/", -1)
-    #_process_dir("datasets/JSON_WIDER/", "datasets/WIDER/images/", -1)
-    #_process_dir("datasets/JSON_AFW/", "datasets/AFW/", -1)
-    #_process_dir("datasets/JSON_IMDB-WIKI/", "datasets/IMDB-WIKI/", -1)
-    #_process_dir("datasets/VOC/train/annotations/", "datasets/VOC/train/images/", -1)
-    
-            exit(0)
+        exit(0)
     exit(-1)
     
 if __name__ == '__main__':
