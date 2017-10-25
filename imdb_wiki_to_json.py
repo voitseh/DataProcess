@@ -2,6 +2,7 @@ import sys
 from scipy.io import loadmat
 from datetime import datetime
 from Parser import *
+from Utils import common
 
 python_version = sys.version_info.major
 
@@ -25,26 +26,47 @@ db = "wiki"
 subdir_count = 100
 subdir = []
 
-class ImdbWikiToJson(Parser):
-    
-    def __init__(self):
-        self.objects = []   
-        self.object_info = {}
-        self.coords = []
-        
-    def calc_age(self, taken, dob):
+def calc_age(taken, dob):
         birth = datetime.fromordinal(max(int(dob) - 366, 1))
         # assume the photo was taken in the middle of the year
         if birth.month < 7:
             return taken - birth.year
         else:
             return taken - birth.year - 1
-        
+def img_preparing():
+    #Copy images to single folder and remove old folders
+    for i in range(subdir_count):
+        if i < 10:
+            subdir.append("0"+str(i)+"/")
+        if i >= 10:
+            subdir.append(str(i)+"/")
+        common.copy(subdir[i], imgs_and_anns_destination, None)
+ 
+class ImdbWikiToJson(Parser):
+    
+    def __init__(self, imgs_and_anns_subfolder):
+        self.objects = []   
+        self.object_info = {}
+        self.coords = []
+        self.img_ann = imgs_and_anns_subfolder
+        super(ImdbWikiToJson, self).__init__()
+    
+    def make_directories(self, sub_dir):
+        super(ImdbWikiToJson, self).make_directories(sub_dir)
+    
+    def extract(self, archive, subfolder, dir_path):
+        super(ImdbWikiToJson, self).extract(archive, subfolder, dir_path)
+    
+
     def parse(self):
         """
             Definition: Make annotations directory for wiki annotations and populate it with separate ann files.
             Returns: None
         """
+        self.make_directories(directories)
+        self.extract(dataset_archive, self.img_ann, imgs_and_anns_destination)
+        img_preparing()
+
         meta = loadmat(annotations_file)
         full_path = meta[db][0, 0]["full_path"][0]
         dob = meta[db][0, 0]["dob"][0]  # Matlab serial date number
@@ -54,7 +76,7 @@ class ImdbWikiToJson(Parser):
         photo_taken = meta[db][0, 0]["photo_taken"][0]  # year
         face_score = meta[db][0, 0]["face_score"][0]
         second_face_score = meta[db][0, 0]["second_face_score"][0]
-        age = [self.calc_age(photo_taken[i], dob[i]) for i in range(len(dob))]
+        age = [calc_age(photo_taken[i], dob[i]) for i in range(len(dob))]
         ind = -1
         
         for i in range(len(dob)):
@@ -73,23 +95,16 @@ class ImdbWikiToJson(Parser):
                 
             self.objects.append(self.object_info.copy())
                 
-        return self.objects
+        for i in self.objects:
+            with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                out_file.write(str(i))
     
 def main():
-    namespace = Parser.createParser (None, None, imgs_and_anns_subfolder)
-    imdb_wiki = ImdbWikiToJson()
-    #make imdb-wiki directories
-    imdb_wiki.make_directories(directories)
-    imdb_wiki.extract(dataset_archive, namespace.imgs_and_anns_subfolder, imgs_and_anns_destination)
-    #Copy images to single folder and remove old folders
-    for i in range(subdir_count):
-        if i < 10:
-            subdir.append("0"+str(i)+"/")
-        if i >= 10:
-            subdir.append(str(i)+"/")
-        imdb_wiki.copy(subdir[i], imgs_and_anns_destination, None)
-    # make json directory
-    imdb_wiki.populate_json_ann(json_dir, imdb_wiki.parse())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
+    namespace = ap.parse_args(sys.argv[1:])
+    imdb_wiki = ImdbWikiToJson(namespace.imgs_and_anns_subfolder)
+    imdb_wiki.parse()
 
 if __name__ == '__main__':
     main()
