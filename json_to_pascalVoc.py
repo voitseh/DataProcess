@@ -3,9 +3,7 @@ import os, sys, shutil, glob, argparse
 import numpy as np
 import json
 import argparse
-#import random
 from Parser import *
-#from Utils import common
 from PIL import Image
 from lxml import etree
 
@@ -16,7 +14,7 @@ python_version = sys.version_info.major
 ###########################################################
 
 # This script is run from  console terminal
-# Sample: python json_to_pascalVoc.py --json "datasets/JSON_INRIA/" --images "datasets/INRIA/images/"
+# Sample: python json_to_pascalVoc.py --json "datasets/JSON_AFW/" --images "datasets/AFW/"
 
 voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB_WIKI/']
 inria_dataset = 'datasets/INRIA/images/'
