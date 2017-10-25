@@ -28,13 +28,28 @@ anns_destination = 'datasets/INRIA/annotations/'
 json_dir = 'datasets/JSON_INRIA/'
 directories = [json_dir,imgs_destination, anns_destination]
 
+
 class InriaToJson(Parser):
    
+    def __init__(self, imgs_subfolder, anns_subfolder):
+        self.img = imgs_subfolder
+        self.ann = anns_subfolder
+        super(InriaToJson, self).__init__()
+
+    def make_directories(self, sub_dir):
+        super(InriaToJson, self).make_directories(sub_dir)
+    
+    def extract(self, archive, subfolder, dir_path):
+        super(InriaToJson, self).extract(archive, subfolder, dir_path)
+
     def parse(self):
         """
         Definition: Parses label file to extract label and bounding box
         coordintates.
         """
+        self.make_directories(directories)
+        self.extract(dataset_archive, self.img, imgs_destination)
+        self.extract(dataset_archive, self.ann, anns_destination)
         objects = []   
         object_info = {}
         coords = []
@@ -65,15 +80,18 @@ class InriaToJson(Parser):
                 object_info['objects'].append(person_info)
                 objects.append(object_info.copy())
                 tmp = []
-        return objects
-def main():
-    inria =  InriaToJson()
-    namespace = Parser.createParser (imgs_subfolder, anns_subfolder, None)
-    inria.make_directories(directories)
-    inria.extract(dataset_archive, namespace.imgs_subfolder, imgs_destination)
-    inria.extract(dataset_archive, namespace.anns_subfolder, anns_destination)
-    inria.populate_json_ann(json_dir,inria.parse())
+            for i in objects:
+                with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                    out_file.write(str(i))
 
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--imgs_subfolder", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
+    ap.add_argument("--anns_subfolder", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
+    namespace = ap.parse_args(sys.argv[1:])
+    inria =  InriaToJson(namespace.imgs_subfolder, namespace.anns_subfolder)
+    inria.parse()
+    
 if __name__ == '__main__':
     main()
 
