@@ -16,8 +16,8 @@ python_version = sys.version_info.major
 # Sample: C:\Users\User>python inria_to_json.py
 # You can also specify images or/and annotations subfolder in dataset archive
 # you will extract files from wich.
-# Sample: python InriaToJson.py --imgs_subfolder INRIAPerson/Train/pos/
-# By defoult subfolder path for images extraction: "INRIAPerson/Train/pos/"
+# Sample: python inria_to_json.py --imgs_subfolder INRIAPerson/Train/pos/
+# By default subfolder path for images extraction: "INRIAPerson/Train/pos/"
 #for annotations extraction: "INRIAPerson/Train/annotations/"
     
 dataset_archive = "INRIAPerson.tar"
@@ -68,12 +68,7 @@ class InriaToJson(Parser):
             for ix,  obj in enumerate(objs):
                 # Make pixel indexes 0-based
                 coor = re.findall('\d+', obj)
-                x1 = int(coor[0])
-                y1 = int(coor[1])
-                x2 = int(coor[2])
-                y2 = int(coor[3])
-
-                tmp = [x1,y1,x2,y2]
+                tmp =list(map( lambda x:int(x), coor))
                 coords.append(tmp)
                 person_info = {'class_name':'Person'}
                 person_info ['bounding_box'] = tmp
