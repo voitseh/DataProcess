@@ -5,6 +5,7 @@ from scipy.io import loadmat
 from h5py import File
 import h5py
 from Parser import *
+from Utils import common
 from PIL import Image
 from six.moves import cPickle as pickle
 
@@ -29,8 +30,20 @@ directories = [imgs_and_anns_destination, json_dir]
 annotations_file ='datasets/AFW/anno.mat'
 
 class AfwToJson(Parser):
+    def __init__(self, imgs_and_anns_subfolder):
+        self.img_ann = imgs_and_anns_subfolder
+        super(AfwToJson, self).__init__()
+
+    def make_directories(self, sub_dir):
+        super(AfwToJson, self).make_directories(sub_dir)
     
-    def parse(debug=False):
+    def extract(self, archive, subfolder, dir_path):
+        super(AfwToJson, self).extract(archive, subfolder, dir_path)
+    
+    def parse(self, debug=False):
+        self.make_directories(directories)
+        self.extract(dataset_archive, self.img_ann, imgs_and_anns_destination)
+        common.copy(imgs_and_anns_subfolder, imgs_and_anns_destination, names=None)
         with h5py.File(annotations_file) as data:
             
             annotations = data[u'anno']
@@ -68,14 +81,14 @@ class AfwToJson(Parser):
 
                 objects.append(object_info)
                 
-            return objects
+            for i in objects:
+                with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                    out_file.write(str(i))
 def main():
-    namespace = Parser.createParser (None, None, imgs_and_anns_subfolder)
-    afw =  AfwToJson()
-    #make afw directory
-    afw.make_directories(directories)
-    afw.extract(dataset_archive, namespace.imgs_and_anns_subfolder, imgs_and_anns_destination)
-    afw.copy(imgs_and_anns_subfolder, imgs_and_anns_destination, names=None)
-    afw.populate_json_ann(json_dir, afw.parse())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
+    namespace = ap.parse_args(sys.argv[1:])
+    afw = AfwToJson(namespace.imgs_and_anns_subfolder)
+    afw.parse()
 if __name__ == '__main__':
     main()
