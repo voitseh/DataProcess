@@ -3,8 +3,9 @@ import os, sys, shutil, glob, argparse
 import numpy as np
 import json
 import argparse
-import random
+#import random
 from Parser import *
+#from Utils import common
 from PIL import Image
 from lxml import etree
 
@@ -15,41 +16,24 @@ python_version = sys.version_info.major
 ###########################################################
 
 # This script is run from  console terminal
-# Sample: C:\Users\User>python json_to_pascalVoc.py
-# You can also specify dataset  from wich you copy images as:
-# INRIA,AFW,WIDER,IMDB_WIKI
-# Sample: python json_to_pascalVoc.py --dataset "INRIA"
+# Sample: python json_to_pascalVoc.py --json "datasets/JSON_INRIA/" --images "datasets/INRIA/images/"
 
-TRAIN_COEF = 0.6
-VAL_COEF = 0.2
-TEST_COEF = 0.2
-
-json_path = ""
+voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB_WIKI/']
 inria_dataset = 'datasets/INRIA/images/'
-voc_train_ann = 'datasets/VOC/train/annotations/'
-voc_train_img = 'datasets/VOC/train/images/'
-voc_val_ann = 'datasets/VOC/val/annotations/'
-voc_val_img = 'datasets/VOC/val/images/'
-voc_test_ann = 'datasets/VOC/test/annotations/'
-voc_test_img = 'datasets/VOC/test/images/'
-image_count = 0
-parent_dir = {0: "train/", 1: "val/", 2: "test/" }
-child_dir = {0: '', 1: 'images/', 2: 'annotations/'}
-subdir = []
+
 
 class JsonToPascalVoc(Parser):
     
-    def __init__(self,dataset):
-        global image_count, json_path
-        json_path = 'datasets/JSON_'+str(dataset)+'/'
-        self.dataset_imgs_path = "datasets/"+str(dataset)+"/"
-        image_count = len(glob.glob(os.path.join('datasets/'+dataset+'/', "*.*")))
-        if str(dataset) == "WIDER" or str(dataset) == "INRIA":
-            self.dataset_imgs_path = "datasets/"+str(dataset)+"/images/"
-            image_count = len(glob.glob(os.path.join('datasets/'+dataset+'/images/', "*.*")))
-        
+    def __init__(self,json_path, imgs_path):
+        self.json_path = str(json_path)
+        self.imgs_path = imgs_path
+        self.image_count = len(glob.glob(os.path.join( self.imgs_path, "*.*")))
+        super(JsonToPascalVoc, self).__init__()
+    
+    def make_directories(self, sub_dir):
+        super(JsonToPascalVoc, self).make_directories(sub_dir)
+    
     def to_pasvoc_xml(self, fname, labels, coords, img_width, img_height, genders = None,ages = None):
-        
         annotation = etree.Element('annotation')
         filename = etree.Element('filename')
         f = fname.split("/")
@@ -137,65 +121,39 @@ class JsonToPascalVoc(Parser):
                     ages.append(obj["age"])
         return  classes,bdn_bxs,genders,ages
     
-    # make voc directories
-    for i in range(len(parent_dir)):
-        for j in range(len(child_dir)):
-            parent_dir[i]+=child_dir[j]
-            subdir.append("datasets/VOC/"+parent_dir[i])
-            parent_dir[i] =  parent_dir[i].split("/")[0]+"/"
-    # populate voc folders
-    def populate(self,et,f,dataset_imgs,fname,anns_dir,imgs_dir):
-        et.write(anns_dir + f.split(".json")[0] + ".xml", pretty_print=True)
-        if dataset_imgs == inria_dataset:
-            im = Image.open(fname)
-            im.save(imgs_dir + (f.split(".json")[0] + ".jpg"),"jpeg")
-        else:
-            shutil.copy(fname,imgs_dir)
     def voc(self, label=None):
+        path = ''
+        path =[x for x in voc_path if (x.split("_")[1] == self.json_path.split("_")[1])]
+        self.make_directories(path)
+        
         print ("Convert json to voc")
-        ind = 0
         # Iterate through json annotations data
-        #Copy all images from datasets to voc training, validation and test image folders.
-        for f in os.listdir(json_path):
+        for f in os.listdir(self.json_path):
             
-            fname = json_path + f
+            fname = self.json_path + f
             if os.path.isfile(fname):
                
-                if self.dataset_imgs_path ==  inria_dataset:
-                    fname = (self.dataset_imgs_path + f).split(".json")[0] + ".png"
+                if self.imgs_path ==  inria_dataset:
+                    fname = (self.imgs_path + f).split(".json")[0] + ".png"
+                    common.png_to_jpg_converter(fname,  self.imgs_path, f.split(".json")[0] + ".png")
                     
-                else:
-                    fname = (self.dataset_imgs_path + f).split(".json")[0] + ".jpg"
+                fname = (self.imgs_path + f).split(".json")[0] + ".jpg"
                 
                 if os.path.isfile(fname):
-                    ind += 1
                     img = Image.open(fname)
                     w, h = img.size
                     img.close()
-                    fname = (json_path + f).split(".json")[0] + ".jpg"
-                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(json_path + f))
+                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(self.json_path + f))
                     annotation = self.to_pasvoc_xml(fname, labels, coords, w, h, genders, ages)
                     et = etree.ElementTree(annotation)
-                    if self.dataset_imgs_path == inria_dataset:
-                        fname = (self.dataset_imgs_path + f).split(".json")[0] + ".png"
-                    else:
-                        fname = (self.dataset_imgs_path + f).split(".json")[0] + ".jpg"
-                    if ind <= image_count*TRAIN_COEF:
-                        self.populate(et,f,self.dataset_imgs_path,fname,voc_train_ann,voc_train_img)
-                    if image_count*TRAIN_COEF < ind <= image_count*(TRAIN_COEF+VAL_COEF):
-                        self.populate(et,f,self.dataset_imgs_path,fname,voc_val_ann,voc_val_img)
+                    et.write(path[0] + f.split(".json")[0] + ".xml", pretty_print=True)
                     
-                    if ind > image_count*(TRAIN_COEF+VAL_COEF):
-                        self.populate(et,f,self.dataset_imgs_path,fname,voc_test_ann,voc_test_img)
-                        
 def main():
-    
     ap = argparse.ArgumentParser()
-    ap.add_argument("--dataset", default="INRIA", required = True, help = "Type dataset to receive images from")
+    ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
+    ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
     namespace = ap.parse_args(sys.argv[1:])
-    
-    voc = JsonToPascalVoc(namespace.dataset)
-    voc.make_directories(subdir)
+    voc = JsonToPascalVoc(namespace.json, namespace.images)
     voc.voc()
 if __name__ == '__main__':
     main() 
