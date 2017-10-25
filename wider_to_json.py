@@ -3,6 +3,7 @@ import os, sys, shutil, glob, argparse
 import numpy as np
 import random
 from Parser import *
+from Utils import common
 
 python_version = sys.version_info.major
 
@@ -33,9 +34,7 @@ divide_ann_folder = 'datasets/WIDER/divide_ann/'
 json_dir = 'datasets/JSON_WIDER/'
 directories = [dir_imgs_will_be_extracted_to, dir_anns_will_be_extracted_to, divide_ann_folder, json_dir ]
 
-class WiderToJson(Parser):
-    
-    def make_divide_ann(self):
+def make_divide_ann():
         """
         Definition: Populate divide_ann with separate ann files.
         Returns: None
@@ -53,10 +52,47 @@ class WiderToJson(Parser):
                 if len(l) > 2:
                     f.write(line)
         file.close()
+def rename(root_list):
+    for old_name in os.listdir(root_list):
+        new_name = old_name.split("--")[0]
+        os.rename(os.path.join(root_list, old_name),os.path.join(root_list, new_name))
+        
+def copy(subfolder, dir_path, names=None):
+    common.copy(subfolder, dir_path, names=None)
+
+def single_folder():
+    for i in range(subdir_count):
+        subdir.append( imgs_subfolder+str(i)+"/")
+        copy(subdir[i], dir_imgs_will_be_extracted_to, names)
+    shutil.rmtree( dir_imgs_will_be_extracted_to+"WIDER_train")
+
+class WiderToJson(Parser):
+    
+    def __init__(self, imgs_subfolder, anns_subfolder):
+        self.img = imgs_subfolder
+        self.ann = anns_subfolder
+        super(WiderToJson, self).__init__()
+
+    def make_directories(self, sub_dir):
+        super(WiderToJson, self).make_directories(sub_dir)
+    
+    def extract(self, archive, subfolder, dir_path):
+        super(WiderToJson, self).extract(archive, subfolder, dir_path)
+
     def parse(self):
         """
         Definition: Parses divide_ann file to extract bounding boxcoordintates.
         """
+        self.make_directories(directories)
+        self.extract(imgs_dataset_archive, self.img, dir_imgs_will_be_extracted_to)
+        self.extract(anns_dataset_archive, self.ann, dir_anns_will_be_extracted_to)
+        #copy annotations into annotations folder
+        copy(self.ann, dir_anns_will_be_extracted_to)
+        make_divide_ann()
+        #rename imgs subfolders to format "1"-"61"
+        rename(dir_imgs_will_be_extracted_to+self.img)
+        #Copy images to single folder
+        single_folder()
         objects = []   
         object_info = {}
         for f in os.listdir(divide_ann_folder):
@@ -80,57 +116,19 @@ class WiderToJson(Parser):
                 object_info['objects'].append(person_info)
                 objects.append(object_info.copy())
                 tmp = []
+        print(objects)
         return objects
-    
-    def rename(self,before,filename,ext,names,root_list,is_list = False):
-        if is_list == True:
-            for old_name in os.listdir(root_list):
-                new_name = old_name.split("--")[0]
-                os.rename(os.path.join(root_list, old_name),os.path.join(root_list, new_name))
-        else:
-            new_filename = before + "{0:0>5}".format(names[index])+ext
-            if ext == ".txt":
-                 # rename annotations at divide ann folder
-                if os.path.isfile(before+filename.split("\\")[1].split(".jpg")[0]+ext):
-                    os.rename(before+filename.split("\\")[1].split(".jpg")[0]+ext, new_filename)
-            if ext == ".jpg":
-                # rename images
-                os.rename(filename, new_filename)
-            return new_filename
-    
-    def copy(self, subfolder, dir_path, names=None):
-        Parser.copy(subfolder, dir_path, names=None)
-        for filename in glob.glob(os.path.join( dir_path + subfolder, "*.*")):
-            # rename annotations each in divide_ann folder according to images names
-            self.rename(dir_anns_will_be_extracted_to,filename, ".txt",names, None)
-            # rename & copy images to one single folder
-            shutil.copy(self.rename(dir_path+subfolder,filename, ".jpg",names, None) ,  dir_path)
-            #remover folders with images after copies into single folder
-            if os.path.exists(dir_path+"WIDER_train"+subfolder):
-                shutil.rmtree( dir_path+"WIDER_train"+subfolder)
-    def single_folder(self):
-        for i in range(subdir_count):
-            subdir.append( imgs_subfolder+str(i)+"/")
-            self.copy(subdir[i], dir_imgs_will_be_extracted_to, names)
-        shutil.rmtree( dir_imgs_will_be_extracted_to+"WIDER_train")
-
+        '''
+        for i in objects:
+            with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                out_file.write(str(i))
+        '''
 def main():
-    namespace = Parser.createParser (imgs_subfolder, anns_subfolder, None)
-    wider =  WiderToJson()
-    #make wider directories
-    wider.make_directories(directories)
-    #extract images from wider dataset archive
-    wider.extract(imgs_dataset_archive, namespace.imgs_subfolder, dir_imgs_will_be_extracted_to)
-    # extract annotations file from annotations dataset archive
-    wider.extract(anns_dataset_archive, namespace.anns_subfolder, dir_anns_will_be_extracted_to)
-    #copy annotations into annotations folder
-    wider.copy(namespace.anns_subfolder, dir_anns_will_be_extracted_to)
-    wider.make_divide_ann()
-    #rename imgs subfolders to format "1"-"61"
-    wider.rename(None,None,None,None,dir_imgs_will_be_extracted_to+namespace.imgs_subfolder,True)
-    #Copy images to single folder
-    wider.single_folder()
-    # make json directory
-    wider.populate_json_ann(json_dir, wider.parse())
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--imgs_subfolder", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
+    ap.add_argument("--anns_subfolder", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
+    namespace = ap.parse_args(sys.argv[1:])
+    wider =  WiderToJson(namespace.imgs_subfolder, namespace.anns_subfolder)
+    wider.parse()
 if __name__ == '__main__':
     main()
