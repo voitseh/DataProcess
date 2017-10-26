@@ -196,7 +196,7 @@ def process_json_ann(annotations_folder, images, index):
             show_bound_box(images[index], bounding_box, gender, age)
             
 def process_single(annotations_folder, images_folder, index):
-    if images_folder == "datasets/INRIA/images/":
+    if any(File.endswith(".png") for File in os.listdir(images_folder)):
         images = sorted(list_files(images_folder, '.png'))
     else:
         images = sorted(list_files(images_folder, '.jpg'))
