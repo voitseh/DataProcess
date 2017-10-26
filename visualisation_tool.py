@@ -2,11 +2,8 @@
 Visualise images bounding boxes, genders and ages
 
 Usage :
-
- - .jpg images, annotations (Pascal VOC format)  
-    visualisation_tool.py --ann_dir=''  --images_dir='' --index=''
- - .jpg images, annotations (Pascal VOC format)  
-    visualisation_tool.py --ann_dir=''  --images_dir='' --index=''
+    - .jpg images, annotations (Json format)  
+    python visualisation_tool.py --ann_dir datasets/JSON_INRIA/  --images_dir datasets/INRIA/images/ --index 5
 '''
 import cv2
 from PIL import Image
@@ -85,7 +82,7 @@ def load_image(filename, flags=-1):
         return None
     return cv2.imread(filename, flags)
 
-def draw_age_gender(filename, bound_boxes, gender=None, age=None):
+def draw_age_gender(filename, image, bound_boxes, gender=None, age=None):
     for bound_box in bound_boxes:
         result = draw_bounding_box(filename,image, bound_box, center_with_size=False)
         plt.title("{}, {}".format(int(age),"M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F"))
@@ -107,7 +104,7 @@ def show_bound_box(filename, bound_boxes, gender=None, age=None):
         plt.imshow(result)
         plt.show()
     else:
-        draw_age_gender(filename, bound_boxes, gender, age)
+        draw_age_gender(filename, image, bound_boxes, gender, age)
     
 def parse_from_pascal_voc_format(filename):
     """
@@ -207,6 +204,7 @@ def process_single(annotations_folder, images_folder, index):
     process_json_ann(annotations_folder, images, index)
 
 def _process_dir(annotations_folder, images_folder, index=-1):
+    
     filescount = len(os.listdir(annotations_folder))
     if index == -1:
         for i in range(filescount):
@@ -214,7 +212,7 @@ def _process_dir(annotations_folder, images_folder, index=-1):
     else:
         process_single(annotations_folder,images_folder,  index)
 
-def main():      
+def main(): 
     
     if not args['ann_dir']: 
         print ("Please specify folder with annotations") 
