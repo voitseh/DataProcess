@@ -4,10 +4,9 @@ import numpy as np
 import json
 import argparse
 from Parser import *
+from Utils import common
 from PIL import Image
 from lxml import etree
-
-python_version = sys.version_info.major
 
 ###########################################################
 ##########        JSON to VOC Conversion        ##########
@@ -16,7 +15,7 @@ python_version = sys.version_info.major
 # This script is run from  console terminal
 # Sample: python json_to_pascalVoc.py --json "datasets/JSON_AFW/" --images "datasets/AFW/"
 
-voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB_WIKI/']
+voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB-WIKI/']
 inria_dataset = 'datasets/INRIA/images/'
 
 
@@ -122,7 +121,7 @@ class JsonToPascalVoc(Parser):
     def voc(self, label=None):
         path = ''
         path =[x for x in voc_path if (x.split("_")[1] == self.json_path.split("_")[1])]
-        self.make_directories(path)
+        self.make_directories(path[0] +'single/')
         
         print ("Convert json to voc")
         # Iterate through json annotations data
@@ -130,7 +129,6 @@ class JsonToPascalVoc(Parser):
             
             fname = self.json_path + f
             if os.path.isfile(fname):
-               
                 if self.imgs_path ==  inria_dataset:
                     fname = (self.imgs_path + f).split(".json")[0] + ".png"
                     common.png_to_jpg_converter(fname,  self.imgs_path, f.split(".json")[0] + ".png")
@@ -144,7 +142,7 @@ class JsonToPascalVoc(Parser):
                     labels, coords, genders, ages = self.parse_json_ann(os.path.join(self.json_path + f))
                     annotation = self.to_pasvoc_xml(fname, labels, coords, w, h, genders, ages)
                     et = etree.ElementTree(annotation)
-                    et.write(path[0] + f.split(".json")[0] + ".xml", pretty_print=True)
+                    et.write(path[0]+'single/' + f.split(".json")[0] + ".xml", pretty_print=True)
                     
 def main():
     ap = argparse.ArgumentParser()
