@@ -1,5 +1,6 @@
 import os, sys, glob
 import shutil
+from PIL import Image
 
 
 def copy(subfolder, dir_path, names=None):
