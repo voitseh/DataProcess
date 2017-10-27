@@ -16,34 +16,30 @@ from lxml import etree
 # Sample: python json_to_pascalVoc.py --json "datasets/JSON_AFW/" --images "datasets/AFW/"
 
 voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB-WIKI/']
-inria_dataset = 'datasets/INRIA/images/'
-
 
 class JsonToPascalVoc(Parser):
     
-    def __init__(self,json_path, imgs_path):
-        self.json_path = str(json_path)
-        self.imgs_path = imgs_path
-        self.image_count = len(glob.glob(os.path.join( self.imgs_path, "*.*")))
+    def __init__(self):
+        self.ap = argparse.ArgumentParser()
+        self.ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
+        self.ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
+        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(JsonToPascalVoc, self).__init__()
-    
-    def make_directories(self, sub_dir):
-        super(JsonToPascalVoc, self).make_directories(sub_dir)
-    
-    def to_pasvoc_xml(self, fname, labels, coords, img_width, img_height, genders = None,ages = None):
+   
+    def to_pasvoc_xml(self,args_dict,genders=None,ages=None):
         annotation = etree.Element('annotation')
         filename = etree.Element('filename')
-        f = fname.split("/")
+        f = args_dict['fname'].split("/")
         filename.text = f[-1]
         annotation.append(filename)
         folder = etree.Element('folder')
         folder.text = "/".join(f[:-1])
         annotation.append(folder)
-        for i in range(len(coords)):
+        for i in range(len(args_dict['coords'])):
             object = etree.Element('object')
             annotation.append(object)
             name = etree.Element('name')
-            name.text = labels[i]
+            name.text = args_dict['labels'][i]
             object.append(name)
             if genders != []:
                 name = etree.Element('gender')
@@ -56,16 +52,16 @@ class JsonToPascalVoc(Parser):
             bndbox = etree.Element('bndbox')
             object.append(bndbox)
             xmax = etree.Element('xmax')
-            xmax.text = str(coords[i][2])
+            xmax.text = str(args_dict['coords'][i][2])
             bndbox.append(xmax)
             xmin = etree.Element('xmin')
-            xmin.text = str(coords[i][0])
+            xmin.text = str(args_dict['coords'][i][0])
             bndbox.append(xmin)
             ymax = etree.Element('ymax')
-            ymax.text = str(coords[i][3])
+            ymax.text = str(args_dict['coords'][i][3])
             bndbox.append(ymax)
             ymin = etree.Element('ymin')
-            ymin.text = str(coords[i][1])
+            ymin.text = str(args_dict['coords'][i][1])
             bndbox.append(ymin)
             difficult = etree.Element('difficult')
             difficult.text = '0'
@@ -85,10 +81,10 @@ class JsonToPascalVoc(Parser):
         depth.text = '3'
         img_size.append(depth)
         height = etree.Element('height')
-        height.text = str(img_height)
+        height.text = str(args_dict['h'])
         img_size.append(height)
         width = etree.Element('width')
-        width.text = str(img_width)
+        width.text = str(args_dict['w'])
         img_size.append(width)
 
         return annotation
@@ -120,36 +116,27 @@ class JsonToPascalVoc(Parser):
     
     def voc(self, label=None):
         path = ''
-        path =[x for x in voc_path if (x.split("_")[1] == self.json_path.split("_")[1])]
-        self.make_directories(path[0] +'single/')
+        path =[x for x in voc_path if (x.split("_")[1] == str(self.namespace.json).split("_")[1])]
+        make_directories(path[0] +'single/')
         
         print ("Convert json to voc")
         # Iterate through json annotations data
-        for f in os.listdir(self.json_path):
-            
-            fname = self.json_path + f
+        for f in os.listdir(str(self.namespace.json)):
+            fname = str(self.namespace.json) + f
             if os.path.isfile(fname):
-                if self.imgs_path ==  inria_dataset:
-                    fname = (self.imgs_path + f).split(".json")[0] + ".png"
-                    common.png_to_jpg_converter(fname,  self.imgs_path, f.split(".json")[0] + ".png")
-                    
-                fname = (self.imgs_path + f).split(".json")[0] + ".jpg"
-                
+                fname = (self.namespace.images + f).split(".json")[0] + ".jpg"
                 if os.path.isfile(fname):
                     img = Image.open(fname)
                     w, h = img.size
                     img.close()
-                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(self.json_path + f))
-                    annotation = self.to_pasvoc_xml(fname, labels, coords, w, h, genders, ages)
+                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(str(self.namespace.json) + f))
+                    args_dict = {'fname':fname, 'labels':labels, 'coords':coords, 'w':w, 'h':h}
+                    annotation = self.to_pasvoc_xml(args_dict,genders, ages)
                     et = etree.ElementTree(annotation)
                     et.write(path[0]+'single/' + f.split(".json")[0] + ".xml", pretty_print=True)
                     
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
-    ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
-    namespace = ap.parse_args(sys.argv[1:])
-    voc = JsonToPascalVoc(namespace.json, namespace.images)
+    voc = JsonToPascalVoc()
     voc.voc()
 if __name__ == '__main__':
-    main() 
+    main()

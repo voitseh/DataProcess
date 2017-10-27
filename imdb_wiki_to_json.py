@@ -31,41 +31,34 @@ def calc_age(taken, dob):
         # assume the photo was taken in the middle of the year
         if birth.month < 7:
             return taken - birth.year
-        else:
+        else: 
             return taken - birth.year - 1
-def img_preparing():
+       
+def imgs_to_single_folder():
     #Copy images to single folder and remove old folders
     for i in range(subdir_count):
-        if i < 10:
-            subdir.append("0"+str(i)+"/")
-        if i >= 10:
-            subdir.append(str(i)+"/")
+        subdir.append(imgs_and_anns_destination+"0"+str(i)+"/") if i < 10 else  subdir.append(imgs_and_anns_destination+str(i)+"/")
         common.copy(subdir[i], imgs_and_anns_destination, None)
- 
+        common.delete_dir(subdir[i])
 class ImdbWikiToJson(Parser):
     
-    def __init__(self, imgs_and_anns_subfolder):
+    def __init__(self):
         self.objects = []   
         self.object_info = {}
         self.coords = []
-        self.img_ann = imgs_and_anns_subfolder
+        self.ap = argparse.ArgumentParser()
+        self.ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
+        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(ImdbWikiToJson, self).__init__()
     
-    def make_directories(self, sub_dir):
-        super(ImdbWikiToJson, self).make_directories(sub_dir)
-    
-    def extract(self, archive, subfolder, dir_path):
-        super(ImdbWikiToJson, self).extract(archive, subfolder, dir_path)
-    
-
     def parse(self):
         """
             Definition: Make annotations directory for wiki annotations and populate it with separate ann files.
             Returns: None
         """
-        self.make_directories(directories)
-        self.extract(dataset_archive, self.img_ann, imgs_and_anns_destination)
-        img_preparing()
+        make_directories(directories)
+        extract(dataset_archive, self.namespace.imgs_and_anns_subfolder, imgs_and_anns_destination)
+        imgs_to_single_folder()
 
         meta = loadmat(annotations_file)
         full_path = meta[db][0, 0]["full_path"][0]
@@ -100,10 +93,7 @@ class ImdbWikiToJson(Parser):
                 out_file.write(str(i))
     
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
-    namespace = ap.parse_args(sys.argv[1:])
-    imdb_wiki = ImdbWikiToJson(namespace.imgs_and_anns_subfolder)
+    imdb_wiki = ImdbWikiToJson()
     imdb_wiki.parse()
 
 if __name__ == '__main__':

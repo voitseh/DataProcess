@@ -2,6 +2,7 @@
 import os, sys
 import numpy as np
 from Parser import *
+from Utils import common
 from PIL import Image
 from scipy.io import loadmat
 from datetime import datetime
@@ -13,13 +14,8 @@ python_version = sys.version_info.major
 ###########################################################
 
 # This script is run from  console terminal
-# Sample: C:\Users\User>python inria_to_json.py
-# You can also specify images or/and annotations subfolder in dataset archive
-# you will extract files from wich.
-# Sample: python inria_to_json.py --imgs_subfolder INRIAPerson/Train/pos/
-# By default subfolder path for images extraction: "INRIAPerson/Train/pos/"
-#for annotations extraction: "INRIAPerson/Train/annotations/"
-    
+# Sample: C:\Users\User>python inria_to_json.py 
+
 dataset_archive = "INRIAPerson.tar"
 imgs_subfolder = "INRIAPerson/Train/pos/"
 anns_subfolder = "INRIAPerson/Train/annotations/"
@@ -31,25 +27,22 @@ directories = [json_dir,imgs_destination, anns_destination]
 
 class InriaToJson(Parser):
    
-    def __init__(self, imgs_subfolder, anns_subfolder):
-        self.img = imgs_subfolder
-        self.ann = anns_subfolder
+    def __init__(self):
+        self.ap = argparse.ArgumentParser()
+        self.ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
+        self.ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
+        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(InriaToJson, self).__init__()
-
-    def make_directories(self, sub_dir):
-        super(InriaToJson, self).make_directories(sub_dir)
     
-    def extract(self, archive, subfolder, dir_path):
-        super(InriaToJson, self).extract(archive, subfolder, dir_path)
-
     def parse(self):
         """
         Definition: Parses label file to extract label and bounding box
         coordintates.
         """
-        self.make_directories(directories)
-        self.extract(dataset_archive, self.img, imgs_destination)
-        self.extract(dataset_archive, self.ann, anns_destination)
+        make_directories(directories)
+        extract(dataset_archive, self.namespace.images, imgs_destination)
+        extract(dataset_archive, self.namespace.annotations, anns_destination)
+        common.png_to_jpg_converter(imgs_destination)
         objects = []   
         object_info = {}
         coords = []
@@ -80,13 +73,8 @@ class InriaToJson(Parser):
                     out_file.write(str(i))
 
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--imgs_subfolder", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
-    ap.add_argument("--anns_subfolder", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
-    namespace = ap.parse_args(sys.argv[1:])
-    inria =  InriaToJson(namespace.imgs_subfolder, namespace.anns_subfolder)
+    inria =  InriaToJson()
     inria.parse()
-    
 if __name__ == '__main__':
     main()
 

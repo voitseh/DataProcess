@@ -3,6 +3,7 @@ import os, sys, shutil, glob
 import argparse
 import random
 from Parser import *
+from Utils import common
 from PIL import Image
 
 ###########################################################
@@ -25,16 +26,15 @@ def make_voc_dir(voc_path):
             subdir.append(voc_path+parent_dir[i])
             parent_dir[i] =  parent_dir[i].split("/")[0]+"/"
     return subdir
-
-def copy(dir_path, subfolder, filename):
-    shutil.copy(filename,  dir_path+subfolder)
-
+#copy(from_dir_path, destination_dir_path, file = None)
 def copy_anns_imgs(voc_path,ind, imgs_path, file):
     _voc_path = voc_path + 'single/'
-    copy(voc_path, parent_dir[ind]+child_dir[2],_voc_path+ file)
-    copy(voc_path, parent_dir[ind]+child_dir[1],imgs_path+ file.split('.')[0]+".jpg")
+    common.copy(None,voc_path+parent_dir[ind]+child_dir[2],_voc_path + file)
+    common.copy(None,voc_path+parent_dir[ind]+child_dir[1],imgs_path + file.split('.')[0]+".jpg")
+    #copy(voc_path, parent_dir[ind]+child_dir[2],_voc_path+ file)
+    #copy(voc_path, parent_dir[ind]+child_dir[1],imgs_path+ file.split('.')[0]+".jpg")
      
-def separ_voc(voc_path, imgs_path):
+def populate_train_test_val(voc_path, imgs_path):
     _voc_path = voc_path + 'single/'
     counter = 0
     voc_anns_list = os.listdir( _voc_path )
@@ -50,26 +50,20 @@ def separ_voc(voc_path, imgs_path):
             copy_anns_imgs(voc_path,2, imgs_path, file)   
             
 
-class separator(Parser):
-    def __init__(self,voc_path, imgs_path):
-        self.voc_path = voc_path
-        self.imgs_path = imgs_path
-        super(separator, self).__init__()
-    
-    def make_directories(self, sub_dir):
-        super(separator, self).make_directories(sub_dir)
-    
+class Separator():
+    def __init__(self):
+        self.ap = argparse.ArgumentParser()
+        self.ap.add_argument("--voc", default="VOC_AFW", required = True, help = "Type voc folder path to receive annotations from")
+        self.ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
+        self.namespace = self.ap.parse_args(sys.argv[1:])
+        super(Separator, self).__init__()
+   
     def separate(self):
-        self.make_directories(make_voc_dir(self.voc_path))
-        separ_voc(self.voc_path,self.imgs_path)
+        make_directories(make_voc_dir(self.namespace.voc))
+        populate_train_test_val(self.namespace.voc,self.namespace.images)
         
-
 def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--voc", default="VOC_AFW", required = True, help = "Type voc folder path to receive annotations from")
-    ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
-    namespace = ap.parse_args(sys.argv[1:])
-    sep = separator(namespace.voc, namespace.images)
+    sep = Separator()
     sep.separate()
 if __name__ == '__main__':
     main() 
