@@ -3,11 +3,11 @@ import shutil
 from PIL import Image
 
 def copy(from_dir_path, destination_dir_path, file = None):
-    index = 0
+  
     if file == None:
         #copy files from directory
         for filename in glob.glob(os.path.join( from_dir_path, "*.*")):
-            index += 1
+            
     
             shutil.copy(filename,destination_dir_path)
     else:
@@ -30,4 +30,4 @@ def png_to_jpg_converter( distination_path, filename=None, img_name=None,):
         for old_name in os.listdir(distination_path):
             new_name = old_name.split(".")[0]+".jpg"
             os.rename(os.path.join(distination_path, old_name),os.path.join(distination_path, new_name))
-            print(os.path.join(distination_path, new_name))
+            
