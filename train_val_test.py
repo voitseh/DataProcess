@@ -26,14 +26,11 @@ def make_voc_dir(voc_path):
             subdir.append(voc_path+parent_dir[i])
             parent_dir[i] =  parent_dir[i].split("/")[0]+"/"
     return subdir
-#copy(from_dir_path, destination_dir_path, file = None)
 def copy_anns_imgs(voc_path,ind, imgs_path, file):
     _voc_path = voc_path + 'single/'
     common.copy(None,voc_path+parent_dir[ind]+child_dir[2],_voc_path + file)
     common.copy(None,voc_path+parent_dir[ind]+child_dir[1],imgs_path + file.split('.')[0]+".jpg")
-    #copy(voc_path, parent_dir[ind]+child_dir[2],_voc_path+ file)
-    #copy(voc_path, parent_dir[ind]+child_dir[1],imgs_path+ file.split('.')[0]+".jpg")
-     
+   
 def populate_train_test_val(voc_path, imgs_path):
     _voc_path = voc_path + 'single/'
     counter = 0
