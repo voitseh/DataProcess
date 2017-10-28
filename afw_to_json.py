@@ -31,6 +31,7 @@ annotations_file ='datasets/AFW/anno.mat'
 
 class AfwToJson(Parser):
     def __init__(self):
+        # TODO no argparse in class constructor
         self.ap = argparse.ArgumentParser()
         self.ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
         self.namespace = self.ap.parse_args(sys.argv[1:])
@@ -39,8 +40,12 @@ class AfwToJson(Parser):
     def parse(self):
         make_directories(directories)
         extract(dataset_archive, self.namespace.imgs_and_anns_subfolder, imgs_and_anns_destination)
+        
+        # TODO use os.path.join instead '+'
         common.copy(imgs_and_anns_destination+imgs_and_anns_subfolder, imgs_and_anns_destination, None)
         common.delete_dir(imgs_and_anns_destination+imgs_and_anns_subfolder)
+        
+        # TODO Move next to separate function
         with h5py.File(annotations_file) as data:
             
             annotations = data[u'anno']
