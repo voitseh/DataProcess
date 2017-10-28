@@ -25,12 +25,18 @@ ap.add_argument("--ann_dir", required = False, help = "Directory with annotation
 ap.add_argument("--index", default='0',required = True, help = "Label index in CSV file to display (-1 to show all)")
 args = vars(ap.parse_args())
 # this class should be used as 'show_bound_box' method arguments
+
+# TODO rename to ObjectInfo
 class ShowBdgBoxArgs():
+    # TODO remove filename from arguments
+    # TODO initialize not from multiple arguments, but from dict:
+    # {'age':0, 'gender':'male' ... }
     def __init__(self, filename,bound_boxes,gender=None,age=None ):
         self.filename = filename
         self.bound_boxes = bound_boxes
         self.gender = gender
         self.age = age
+
 
 def list_files(folder, file_format='.jpg'):
     """
@@ -45,6 +51,7 @@ def get_filename(path):
     with_extension = os.path.basename(path)
     return os.path.splitext(with_extension)[0]
 
+# TODO Rename function bach (show image)
 def img_type(title, image):
     cv2.imshow(title, image)
     while cv2.getWindowProperty(title, 0) >= 0 :
