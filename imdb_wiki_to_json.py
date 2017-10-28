@@ -29,11 +29,16 @@ subdir = []
 def calc_age(taken, dob):
         birth = datetime.fromordinal(max(int(dob) - 366, 1))
         # assume the photo was taken in the middle of the year
+        
+        # TODO why don't make like this:
+        # result = taken - birth.year
+        # return result if birth.month < 7 else (result -1) 
         if birth.month < 7:
             return taken - birth.year
         else: 
             return taken - birth.year - 1
        
+# TODO too many functionality in one function
 def imgs_to_single_folder():
     #Copy images to single folder and remove old folders
     for i in range(subdir_count):
