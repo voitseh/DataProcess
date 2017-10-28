@@ -36,6 +36,8 @@ def make_divide_ann():
         filename = os.path.join(dir_anns_will_be_extracted_to+ 'wider_face_train_bbx_gt.txt') 
         file = open(filename)
         # Iterate through wider annotation data
+        
+        # TODO same problem with if
         for line in file:
             if line[-5:-1] == ".jpg":
                 f= open(divide_ann_folder + line.split("/")[1].split(".jpg")[0]+'.txt',"w+")
