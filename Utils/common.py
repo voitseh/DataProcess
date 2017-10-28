@@ -3,7 +3,8 @@ import shutil
 from PIL import Image
 
 def copy(from_dir_path, destination_dir_path, file = None):
-  
+    # TODO function should make single operation copy or single file, or all files
+    # Separate this function
     if file == None:
         #copy files from directory
         for filename in glob.glob(os.path.join( from_dir_path, "*.*")):
@@ -21,12 +22,15 @@ def delete_file(filename):
     os.remove(filename)
     
 def png_to_jpg_converter( distination_path, filename=None, img_name=None,):
+    # TODO Function should contain twho arguments filename, destination_path
     if filename != None:
         im = Image.open(filename)
+        # TODO use os.path.join instead in next line
         im.save(distination_path + img_name.split(".png")[0] + ".jpg","jpeg")
         #os.remove(filename)
     else:
         #convert to same folder
+        # TODO this shouldn't be here. Remember about single functionality
         for old_name in os.listdir(distination_path):
             new_name = old_name.split(".")[0]+".jpg"
             os.rename(os.path.join(distination_path, old_name),os.path.join(distination_path, new_name))
