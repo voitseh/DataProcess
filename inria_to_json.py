@@ -28,6 +28,7 @@ directories = [json_dir,imgs_destination, anns_destination]
 class InriaToJson(Parser):
    
     def __init__(self):
+        # TODO asked you to move arguments parse from here. They should not be here
         self.ap = argparse.ArgumentParser()
         self.ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
         self.ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
