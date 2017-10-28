@@ -15,11 +15,13 @@ from lxml import etree
 # This script is run from  console terminal
 # Sample: python json_to_pascalVoc.py --json "datasets/JSON_AFW/" --images "datasets/AFW/"
 
+# TODO this file should be independent from datasets
 voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB-WIKI/']
 
 class JsonToPascalVoc(Parser):
     
     def __init__(self):
+        # TODO remove argparse from here
         self.ap = argparse.ArgumentParser()
         self.ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
         self.ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
