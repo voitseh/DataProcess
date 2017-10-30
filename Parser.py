@@ -10,6 +10,7 @@ def extract_zip(archive, dir_path):
         with zipfile.ZipFile(archive, "r") as z:
             z.extractall(dir_path)
     else:
+        # TODO" login
         print("Archive not found!")
 
 def extract_tar(archive, dir_path):
@@ -26,7 +27,8 @@ def extract_archive(archive, dir_path):
         extract_zip(archive, dir_path)
     elif file_extension == '.tar':
         extract_tar(archive, dir_path)
-
+    else:
+        print("not archive")
 class Parser(object):
     def __init__(self):
         pass
