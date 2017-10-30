@@ -23,7 +23,7 @@ ap = argparse.ArgumentParser()
 ap.add_argument("--voc", default="VOC_AFW", required = True, help = "Type voc folder path to receive annotations from")
 ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
 namespace = ap.parse_args(sys.argv[1:])
-
+TODO: make_dir
 def make_voc_dir(voc_path):
     for i in range(len(parent_dir)):
         for j in range(len(child_dir)):
@@ -31,7 +31,7 @@ def make_voc_dir(voc_path):
             subdir.append(voc_path+parent_dir[i])
             parent_dir[i] =  parent_dir[i].split("/")[0]+"/"
     return subdir
-
+TODO: список файлів які і куди
 def copy_anns_imgs(voc_path,ind, imgs_path, file):
     _voc_path = voc_path + 'single/'
     common.copy_file(_voc_path + file, voc_path+parent_dir[ind]+child_dir[2])
