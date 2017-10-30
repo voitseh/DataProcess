@@ -4,6 +4,7 @@ Visualise images bounding boxes, genders and ages
 Usage :
     - .jpg images, annotations (Json format)  
     python visualisation_tool.py --ann_dir datasets/JSON_INRIA/  --images_dir datasets/INRIA/images/ --index 5
+    python visualisation_tool.py --ann_dir datasets/JSON_IMDB-WIKI/  --images_dir datasets/IMDB-WIKI/ --index 5
 '''
 import numpy as np
 import cv2
@@ -24,19 +25,6 @@ ap.add_argument("--images_dir", required = True, help = "Directory of images")
 ap.add_argument("--ann_dir", required = False, help = "Directory with annotations")
 ap.add_argument("--index", default='0',required = True, help = "Label index in CSV file to display (-1 to show all)")
 args = vars(ap.parse_args())
-# this class should be used as 'show_bound_box' method arguments
-
-# TODO rename to ObjectInfo
-class ShowBdgBoxArgs():
-    # TODO remove filename from arguments
-    # TODO initialize not from multiple arguments, but from dict:
-    # {'age':0, 'gender':'male' ... }
-    def __init__(self, filename,bound_boxes,gender=None,age=None ):
-        self.filename = filename
-        self.bound_boxes = bound_boxes
-        self.gender = gender
-        self.age = age
-
 
 def list_files(folder, file_format='.jpg'):
     """
@@ -51,8 +39,7 @@ def get_filename(path):
     with_extension = os.path.basename(path)
     return os.path.splitext(with_extension)[0]
 
-# TODO Rename function bach (show image)
-def img_type(title, image):
+def show_image_with_label(title, image):
     cv2.imshow(title, image)
     while cv2.getWindowProperty(title, 0) >= 0 :
         val = cv2.waitKey(100)
@@ -62,15 +49,12 @@ def img_type(title, image):
 
 def draw_text(dict):
     if dict['Text'] is not None:
-        #dictfilt = lambda x, y: dict([ (i,x[i]) for i in x if i in set(y) ])
-        #keys1 = dictfilt(dic, ('vcat','Text'))
-        #keys2 = dictfilt(dic, ('font','size','thickness'))
-        cv2.putText(dict['vcat'],dict['Text'],(dict['w'],dict['h']),dict['font'],dict['size'],dict['thickness'])
+       cv2.putText(dict['vcat'],dict['Text'],(dict['w'],dict['h']),dict['font'],dict['size'],dict['thickness'])
 
 def show_image(image, gender=None, age=None):
     # image without labels
     if age == None:
-        img_type('Image',image)
+        show_image_with_label('Image',image)
     # image with gender & age labels
     else:
         Text = "{}, {}".format(int(age),"M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
@@ -87,24 +71,24 @@ def show_image(image, gender=None, age=None):
         font = cv2.FONT_HERSHEY_SIMPLEX
         dict = {'vcat':vcat,'Text':Text, 'w':int((width-15)/2),'h':20, 'font':font, 'size':0.5, 'thickness':2}
         draw_text(dict)
-        img_type('Image',vcat)
+        show_image_with_label('Image',vcat)
     
-def draw_rectangle(image,rectangle, center_with_size=False, color=[0, 255, 0]):
-    if center_with_size:
-        cx, cy, w, h = rectangle
+def draw_rectangle(args):
+    if args['center_with_size']:
+        cx, cy, w, h = args['bound_box']
         left, right = int(cx - w/2), int(cx + w/2)
         top, bottom = int(cy - h/2), int(cy + h/2)
     else:
-        left, top, right, bottom = rectangle
-        h, w, c = image.shape
+        left, top, right, bottom = args['bound_box']
+        h, w, c = args['image'].shape
         if w > 650:
             k = 10
         else:
             k = 2
-    return cv2.rectangle(image,(left,top),(right, bottom),color,int(k))
+    return cv2.rectangle(args['image'],(left,top),(right, bottom),args['color'],int(k))
 
-def draw_bounding_box(image, bound_box, center_with_size=True, color=(0,255,0)):
-    result = draw_rectangle(image, bound_box, center_with_size, color)
+def draw_bounding_box(args):
+    result = draw_rectangle(args)
     return result
 
 def load_image(filename, flags=-1):
@@ -112,17 +96,21 @@ def load_image(filename, flags=-1):
         #print (\"file {0} not exists\".format(filename))
         return None
     return cv2.imread(filename, flags)
-
-def show_bound_box(ShowBdgBoxArgs):
-    image = load_image(ShowBdgBoxArgs.filename, cv2.IMREAD_COLOR)
+#Parameters:  Args[0]-filename,Args[1]-bounding boxes, Args[2]-gender, Args[3]-age
+def show_bound_box(Args):
+    image = load_image(Args[0], cv2.IMREAD_COLOR)
+    objInfo = {'image':image, 'bound_box':Args[1], 'center_with_size':True, 'color':(0,255,0)}
     if image is None:
         return
-    if type(ShowBdgBoxArgs.bound_boxes) != int:
-        for bound_box in ShowBdgBoxArgs.bound_boxes:
-            result = draw_bounding_box(image, bound_box, center_with_size=False)
+    if type(Args[1]) != int:
+        objInfo['center_with_size'] = False
+        for bound_box in Args[1]:
+            objInfo['bound_box'] = bound_box  
+            result = draw_bounding_box(objInfo)
     else:
-         result = draw_bounding_box(image, ShowBdgBoxArgs.bound_boxes, center_with_size=False)
-    show_image(result, ShowBdgBoxArgs.gender, ShowBdgBoxArgs.age)
+        objInfo['center_with_size'] = False
+        result = draw_bounding_box(objInfo)
+    show_image(result, Args[2], Args[3])
     
 def parse_from_pascal_voc_format(filename):
     """
@@ -193,7 +181,7 @@ def process_xml_ann(annotations_folder, images, index):
                 bounding_box = parse_from_pascal_voc_format(annfile)
             else:
                 bounding_box, gender, age = parse_from_pascal_voc_format(annfile)
-            show_bound_box(ShowBdgBoxArgs(images[index],bounding_box,gender, age))
+            return images[index],bounding_box,gender, age
 
 def process_json_ann(annotations_folder, images, index):
     bounding_box = []
@@ -207,15 +195,13 @@ def process_json_ann(annotations_folder, images, index):
                 bounding_box = parse_json_annotation( annfile)
             else:
                 bounding_box, gender, age = parse_json_annotation( annfile)
-            show_bound_box(ShowBdgBoxArgs(images[index],bounding_box,gender, age))
-            
+            return images[index],bounding_box,gender, age
+
 def process_single(annotations_folder, images_folder, index):
-    if any(File.endswith(".png") for File in os.listdir(images_folder)):
-        images = sorted(list_files(images_folder, '.png'))
-    else:
-        images = sorted(list_files(images_folder, '.jpg'))
-    process_xml_ann(annotations_folder, images, index)
-    process_json_ann(annotations_folder, images, index)
+    images = sorted(list_files(images_folder, '.jpg'))
+    objects = process_xml_ann(annotations_folder, images, index)
+    objects = process_json_ann(annotations_folder, images, index)
+    show_bound_box(objects)
 
 def _process_dir(annotations_folder, images_folder, index=-1):
     process_single(annotations_folder,images_folder,  index)

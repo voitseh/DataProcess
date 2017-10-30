@@ -4,51 +4,28 @@ import zipfile
 import argparse
 import shutil
 
+def extract_zip(archive, dir_path):
+    if os.path.exists(archive):
+        if not os.path.exists(dir_path): make_directory(dir_path)
+        with zipfile.ZipFile(archive, "r") as z:
+            z.extractall(dir_path)
+    else:
+        print("Archive not found!")
 
-ext_list = ['.jpg','.png', '.mat', 'wider_face_split/wider_face_train_bbx_gt']
+def extract_tar(archive, dir_path):
+    if os.path.exists(archive):
+        with tarfile.open(archive) as tar:
+            if not os.path.exists(dir_path): make_directory(dir_path)
+            tar.extractall(path = dir_path)
+    else:
+        print("Archive not found!")
 
-def archive_members(tf, subfolder):
-    l = len(subfolder)
-    for member in tf.getmembers():
-        if member.path.startswith(subfolder):
-            member.path = member.path[l:]
-            yield member
-    
-def extract_zip(archive, subfolder, dir_path):
-    _archive = zipfile.ZipFile(archive)
-    for file in _archive.namelist():
-        if file.startswith(subfolder):
-            filename, file_extension = os.path.splitext(file)
-            if (x for x in ext_list if (x == file_extension or x == filename)):
-                if os.path.exists(dir_path): 
-                    _archive.extract(file, dir_path)
-
-def extract_tar(archive, subfolder, dir_path):
-    with tarfile.open(archive) as tar:
-            if os.path.exists(dir_path):  
-                if subfolder.split(".") != "mat":
-                    tar.extractall(members=archive_members(tar, subfolder), path = dir_path)
-                else:
-                    for entry in tar:
-                        fileobj = tf.extractfile(entry)
-
-def extract(archive, subfolder, dir_path): 
+def extract_archive(archive, dir_path): 
     filename, file_extension = os.path.splitext(archive)
     if file_extension == '.zip':
-        extract_zip(archive, subfolder, dir_path)
-    else:
-        extract_tar(archive, subfolder, dir_path)
-            
-    
-def make_directories(sub_dir):
-    if type(sub_dir) != str:
-        for i in range(len(sub_dir)):
-            if os.path.isdir(sub_dir[i]): shutil.rmtree(sub_dir[i])
-        for i in range(len(sub_dir)):
-            os.makedirs(sub_dir[i])
-    else:
-        if os.path.isdir(sub_dir): shutil.rmtree(sub_dir)
-        os.makedirs(sub_dir)
+        extract_zip(archive, dir_path)
+    elif file_extension == '.tar':
+        extract_tar(archive, dir_path)
 
 class Parser(object):
     def __init__(self):

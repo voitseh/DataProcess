@@ -7,8 +7,6 @@ from PIL import Image
 from scipy.io import loadmat
 from datetime import datetime
 
-python_version = sys.version_info.major
-
 ###########################################################
 ##########        INRIA PERSON to JSON Convector ##########
 ###########################################################
@@ -19,31 +17,35 @@ python_version = sys.version_info.major
 dataset_archive = "INRIAPerson.tar"
 imgs_subfolder = "INRIAPerson/Train/pos/"
 anns_subfolder = "INRIAPerson/Train/annotations/"
-imgs_destination = 'datasets/INRIA/images/'
-anns_destination = 'datasets/INRIA/annotations/'
+inria_path = 'datasets/INRIA/'
+imgs_destination = os.path.join(inria_path, 'images/')
+anns_destination = os.path.join(inria_path, 'annotations/')
 json_dir = 'datasets/JSON_INRIA/'
 directories = [json_dir,imgs_destination, anns_destination]
 
+ap = argparse.ArgumentParser()
+ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
+ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
+namespace = ap.parse_args(sys.argv[1:])
 
 class InriaToJson(Parser):
    
     def __init__(self):
-        # TODO asked you to move arguments parse from here. They should not be here
-        self.ap = argparse.ArgumentParser()
-        self.ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
-        self.ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
-        self.namespace = self.ap.parse_args(sys.argv[1:])
-        super(InriaToJson, self).__init__()
+       super(InriaToJson, self).__init__()
     
     def parse(self):
+        
+        common.remove_directories(directories)
+        common.make_directories(directories)
+        extract_archive(dataset_archive, inria_path)
+        for filename in os.listdir(os.path.join(inria_path, namespace.images)):
+            common.png_to_jpg_converter(imgs_destination, inria_path+ namespace.images+ filename)
+        common.copy_files(os.path.join(inria_path, namespace.annotations), anns_destination)
+
         """
         Definition: Parses label file to extract label and bounding box
         coordintates.
         """
-        make_directories(directories)
-        extract(dataset_archive, self.namespace.images, imgs_destination)
-        extract(dataset_archive, self.namespace.annotations, anns_destination)
-        common.png_to_jpg_converter(imgs_destination)
         objects = []   
         object_info = {}
         coords = []

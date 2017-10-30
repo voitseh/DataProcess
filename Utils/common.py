@@ -2,36 +2,49 @@ import os, sys, glob
 import shutil
 from PIL import Image
 
-def copy(from_dir_path, destination_dir_path, file = None):
-    # TODO function should make single operation copy or single file, or all files
-    # Separate this function
-    if file == None:
-        #copy files from directory
+def copy_files(from_dir_path, destination_dir_path):
+    if os.path.exists(from_dir_path):
+        if not os.path.exists(destination_dir_path):  make_directory(destination_dir_path)
         for filename in glob.glob(os.path.join( from_dir_path, "*.*")):
-            
-    
-            shutil.copy(filename,destination_dir_path)
-    else:
-        shutil.copy(file, destination_dir_path)
+            copy_file(filename, destination_dir_path)
+    else:  print(from_dir_path + " is not exist!")
 
-def delete_dir(dir_path):
-    if os.path.exists(dir_path):
-        shutil.rmtree( dir_path)
-        
-def delete_file(filename):
-    os.remove(filename)
+def copy_file(file, destination_dir_path):
+    if not os.path.exists(destination_dir_path):  make_directory(destination_dir_path)
+    if os.path.isfile(file):
+        shutil.copy(file, destination_dir_path)
+    else:  print(file + " not found!")
     
-def png_to_jpg_converter( distination_path, filename=None, img_name=None,):
-    # TODO Function should contain twho arguments filename, destination_path
-    if filename != None:
+
+def remove_directory(directory_path):
+    if os.path.isdir(directory_path):
+        shutil.rmtree(directory_path)
+    else: 
+         print(directory_path + " is already deleted!")
+
+def remove_directories(dir_list):
+    if type(dir_list) == list:
+        for i in range(len(dir_list)):
+            if os.path.isdir(dir_list[i]):
+                shutil.rmtree(dir_list[i])
+            else:
+                 print(dir_list[i] + " is already deleted!")
+
+def make_directory(directory_path):
+    if not os.path.exists(directory_path):
+        os.makedirs(directory_path)
+
+def make_directories(dir_list):
+    if type(dir_list) == list:
+        for i in range(len(dir_list)):
+            make_directory(dir_list[i])
+    else:print("Type of "+dir_list+" mast be 'list'")
+
+def png_to_jpg_converter(destination_path, filename):
+    if not os.path.exists(destination_path):  make_directory(destination_path)
+    if os.path.isfile(filename):
         im = Image.open(filename)
-        # TODO use os.path.join instead in next line
-        im.save(distination_path + img_name.split(".png")[0] + ".jpg","jpeg")
-        #os.remove(filename)
-    else:
-        #convert to same folder
-        # TODO this shouldn't be here. Remember about single functionality
-        for old_name in os.listdir(distination_path):
-            new_name = old_name.split(".")[0]+".jpg"
-            os.rename(os.path.join(distination_path, old_name),os.path.join(distination_path, new_name))
-            
+        im.save(destination_path + filename.split("/")[-1].split(".png")[0] + ".jpg","jpeg")
+    else: print(filename + " not found!")
+    
+
