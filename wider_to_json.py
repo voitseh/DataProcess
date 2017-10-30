@@ -5,8 +5,6 @@ import random
 from Parser import *
 from Utils import common
 
-python_version = sys.version_info.major
-
 ###########################################################
 ##########       WIDER to JSON_WIDER Conversion       ##########
 ###########################################################
@@ -16,69 +14,73 @@ python_version = sys.version_info.major
 # You can also specify images and annotations subfolder in dataset archive
 # you will extract files from wich.
 
+wider_dir = 'datasets/WIDER/'
 imgs_dataset_archive = "WIDER_train.zip"
 anns_dataset_archive = "wider_face_split.zip"
-anns_subfolder = "wider_face_split"
+anns_subfolder = os.path.join(wider_dir, "wider_face_split/")
 imgs_subfolder = "WIDER_train/images/"
 subdir_count = 62
 subdir = []
-dir_imgs_will_be_extracted_to = 'datasets/WIDER/images/'
-dir_anns_will_be_extracted_to = 'datasets/WIDER/annotations/'
-divide_ann_folder = 'datasets/WIDER/divide_ann/'
+
+dir_imgs_will_be_extracted_to = os.path.join(wider_dir, 'images/')
+divide_ann_folder = os.path.join(wider_dir, 'divide_ann/')
+
 json_dir = 'datasets/JSON_WIDER/'
-directories = [dir_imgs_will_be_extracted_to, dir_anns_will_be_extracted_to, divide_ann_folder, json_dir ]
+directories = [dir_imgs_will_be_extracted_to, anns_subfolder, divide_ann_folder, json_dir ]
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
+ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
+namespace = ap.parse_args(sys.argv[1:])
 
 def make_divide_ann():
         """
         Definition: Populate divide_ann with separate ann files.
         Returns: None
         """
-        filename = os.path.join(dir_anns_will_be_extracted_to+ 'wider_face_train_bbx_gt.txt') 
+        filename = os.path.join(anns_subfolder, 'wider_face_train_bbx_gt.txt') 
         file = open(filename)
         # Iterate through wider annotation data
         for line in file:
             if line[-5:-1] == ".jpg":
                 f= open(divide_ann_folder + line.split("/")[1].split(".jpg")[0]+'.txt',"w+")
-            if line[-5:-1] != ".jpg":
+            else:
                 l = line.split(" ")
                 file_lines_count =int(line.split("/")[0]) if len(l) < 2 else  f.write(line)
         file.close()
-def rename(root_list):
-    for old_name in os.listdir(root_list):
-        new_name = old_name.split("--")[0]
-        os.rename(os.path.join(root_list, old_name),os.path.join(root_list, new_name))
+
+def rename_files(folder_path):
+    if os.path.exists(folder_path):
+        for old_name in os.listdir(folder_path):
+            new_name = old_name.split("--")[0]
+            os.rename(os.path.join(folder_path, old_name),os.path.join(folder_path, new_name))
+    else:  print(folder_path + " is not exist!")
 
 def single_folder():
     for i in range(subdir_count):
         subdir.append( imgs_subfolder+str(i)+"/")
-        common.copy(dir_imgs_will_be_extracted_to+subdir[i], dir_imgs_will_be_extracted_to)
-    common.delete_dir(dir_imgs_will_be_extracted_to+"WIDER_train")
+        common.copy_files(dir_imgs_will_be_extracted_to+subdir[i], dir_imgs_will_be_extracted_to)
 
 class WiderToJson(Parser):
     
     def __init__(self):
-        self.ap = argparse.ArgumentParser()
-        self.ap.add_argument("--images", default=imgs_subfolder, required = False, help = "Images subfolder to extract from")
-        self.ap.add_argument("--annotations", default=anns_subfolder, required = False, help = "Annotations subfolder to extract from")
-        self.namespace = self.ap.parse_args(sys.argv[1:])
-        super(WiderToJson, self).__init__()
+       super(WiderToJson, self).__init__()
 
-   
     def parse(self):
         """
         Definition: Parses divide_ann file to extract bounding boxcoordintates.
         """
-        make_directories(directories)
-        extract(imgs_dataset_archive, self.namespace.images, dir_imgs_will_be_extracted_to)
-        extract(anns_dataset_archive, self.namespace.annotations, dir_anns_will_be_extracted_to)
-        #copy annotations into annotations folder
-        common.copy(dir_anns_will_be_extracted_to+anns_subfolder, dir_anns_will_be_extracted_to)
-        common.delete_dir(dir_anns_will_be_extracted_to+anns_subfolder)
+        common.remove_directories(directories)
+        common.make_directories(directories)
+        extract_archive(imgs_dataset_archive, dir_imgs_will_be_extracted_to)
+        extract_archive(anns_dataset_archive, wider_dir)
         make_divide_ann()
         #rename imgs subfolders to format "1"-"61"
-        rename(dir_imgs_will_be_extracted_to+imgs_subfolder)
+        rename_files(os.path.join(dir_imgs_will_be_extracted_to+imgs_subfolder))
         #Copy images to single folder
         single_folder()
+        common.remove_directory(os.path.join(dir_imgs_will_be_extracted_to,"WIDER_train"))
+
         objects = []   
         object_info = {}
         for f in os.listdir(divide_ann_folder):

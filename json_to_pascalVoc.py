@@ -17,13 +17,14 @@ from lxml import etree
 
 voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB-WIKI/']
 
+ap = argparse.ArgumentParser()
+ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
+ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
+namespace = ap.parse_args(sys.argv[1:])
+
 class JsonToPascalVoc(Parser):
     
     def __init__(self):
-        self.ap = argparse.ArgumentParser()
-        self.ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
-        self.ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
-        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(JsonToPascalVoc, self).__init__()
    
     def to_pasvoc_xml(self,args_dict,genders=None,ages=None):
@@ -116,20 +117,20 @@ class JsonToPascalVoc(Parser):
     
     def voc(self, label=None):
         path = ''
-        path =[x for x in voc_path if (x.split("_")[1] == str(self.namespace.json).split("_")[1])]
-        make_directories(path[0] +'single/')
+        path =[x for x in voc_path if (x.split("_")[1] == str(namespace.json).split("_")[1])]
+        common.make_directories(path[0] +'single/')
         
         print ("Convert json to voc")
         # Iterate through json annotations data
-        for f in os.listdir(str(self.namespace.json)):
-            fname = str(self.namespace.json) + f
+        for f in os.listdir(str(namespace.json)):
+            fname = str(namespace.json) + f
             if os.path.isfile(fname):
-                fname = (self.namespace.images + f).split(".json")[0] + ".jpg"
+                fname = (namespace.images + f).split(".json")[0] + ".jpg"
                 if os.path.isfile(fname):
                     img = Image.open(fname)
                     w, h = img.size
                     img.close()
-                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(str(self.namespace.json) + f))
+                    labels, coords, genders, ages = self.parse_json_ann(os.path.join(str(namespace.json) + f))
                     args_dict = {'fname':fname, 'labels':labels, 'coords':coords, 'w':w, 'h':h}
                     annotation = self.to_pasvoc_xml(args_dict,genders, ages)
                     et = etree.ElementTree(annotation)

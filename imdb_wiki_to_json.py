@@ -4,8 +4,6 @@ from datetime import datetime
 from Parser import *
 from Utils import common
 
-python_version = sys.version_info.major
-
 ###########################################################
 #####   IMDB-WIKI to JSON_INDB_WIKI Convector    ##########
 ###########################################################
@@ -20,46 +18,51 @@ dataset_archive = "wiki_crop.tar"
 imgs_and_anns_subfolder = "wiki_crop/"
 imgs_and_anns_destination = 'datasets/IMDB-WIKI/'
 json_dir = 'datasets/JSON_IMDB-WIKI/'
-annotations_file = 'datasets/IMDB-WIKI/wiki.mat'
+annotations_file = 'datasets/IMDB-WIKI/wiki_crop/wiki.mat'
 directories = [imgs_and_anns_destination, json_dir]
 db = "wiki"
 subdir_count = 100
 subdir = []
 
+ap = argparse.ArgumentParser()
+ap.add_argument("--subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
+namespace = ap.parse_args(sys.argv[1:])
+
 def calc_age(taken, dob):
-        birth = datetime.fromordinal(max(int(dob) - 366, 1))
-        # assume the photo was taken in the middle of the year
-        if birth.month < 7:
-            return taken - birth.year
-        else: 
-            return taken - birth.year - 1
-       
+    birth = datetime.fromordinal(max(int(dob) - 366, 1))
+    # assume the photo was taken in the middle of the year
+    result = taken - birth.year
+    return result if birth.month < 7 else (result -1) 
+        
 def imgs_to_single_folder():
-    #Copy images to single folder and remove old folders
+    #Copy images to single folder
     for i in range(subdir_count):
-        subdir.append(imgs_and_anns_destination+"0"+str(i)+"/") if i < 10 else  subdir.append(imgs_and_anns_destination+str(i)+"/")
-        common.copy(subdir[i], imgs_and_anns_destination, None)
-        common.delete_dir(subdir[i])
+        print(imgs_and_anns_destination + imgs_and_anns_subfolder + "0" + str(i) + "/")
+        subdir.append(imgs_and_anns_destination + imgs_and_anns_subfolder + "0" + str(i) + "/") if i < 10 else  subdir.append(imgs_and_anns_destination+ imgs_and_anns_subfolder +str(i)+"/")
+        common.copy_files(subdir[i], imgs_and_anns_destination)
+
 class ImdbWikiToJson(Parser):
     
     def __init__(self):
         self.objects = []   
         self.object_info = {}
         self.coords = []
-        self.ap = argparse.ArgumentParser()
-        self.ap.add_argument("--imgs_and_anns_subfolder", default=imgs_and_anns_subfolder, required = False, help = "Images and annotations subfolder to extract from")
-        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(ImdbWikiToJson, self).__init__()
     
     def parse(self):
+        
+        common.remove_directories(directories)
+        common.make_directories(directories)
+        extract_archive(dataset_archive, imgs_and_anns_destination)
+        imgs_to_single_folder()
+        # remove old folders
+        for i in range(subdir_count):
+            common.remove_directory(subdir[i])
+
         """
             Definition: Make annotations directory for wiki annotations and populate it with separate ann files.
             Returns: None
         """
-        make_directories(directories)
-        extract(dataset_archive, self.namespace.imgs_and_anns_subfolder, imgs_and_anns_destination)
-        imgs_to_single_folder()
-
         meta = loadmat(annotations_file)
         full_path = meta[db][0, 0]["full_path"][0]
         dob = meta[db][0, 0]["dob"][0]  # Matlab serial date number

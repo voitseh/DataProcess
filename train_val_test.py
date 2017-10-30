@@ -19,6 +19,11 @@ parent_dir = {0: "train/", 1: "val/", 2: "test/" }
 child_dir = {0: '', 1: 'images/', 2: 'annotations/'}
 subdir = []
 
+ap = argparse.ArgumentParser()
+ap.add_argument("--voc", default="VOC_AFW", required = True, help = "Type voc folder path to receive annotations from")
+ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
+namespace = ap.parse_args(sys.argv[1:])
+
 def make_voc_dir(voc_path):
     for i in range(len(parent_dir)):
         for j in range(len(child_dir)):
@@ -26,11 +31,12 @@ def make_voc_dir(voc_path):
             subdir.append(voc_path+parent_dir[i])
             parent_dir[i] =  parent_dir[i].split("/")[0]+"/"
     return subdir
+
 def copy_anns_imgs(voc_path,ind, imgs_path, file):
     _voc_path = voc_path + 'single/'
-    common.copy(None,voc_path+parent_dir[ind]+child_dir[2],_voc_path + file)
-    common.copy(None,voc_path+parent_dir[ind]+child_dir[1],imgs_path + file.split('.')[0]+".jpg")
-   
+    common.copy_file(_voc_path + file, voc_path+parent_dir[ind]+child_dir[2])
+    common.copy_file(imgs_path + file.split('.')[0]+".jpg", voc_path+parent_dir[ind]+child_dir[1])
+    
 def populate_train_test_val(voc_path, imgs_path):
     _voc_path = voc_path + 'single/'
     counter = 0
@@ -49,15 +55,11 @@ def populate_train_test_val(voc_path, imgs_path):
 
 class Separator():
     def __init__(self):
-        self.ap = argparse.ArgumentParser()
-        self.ap.add_argument("--voc", default="VOC_AFW", required = True, help = "Type voc folder path to receive annotations from")
-        self.ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
-        self.namespace = self.ap.parse_args(sys.argv[1:])
         super(Separator, self).__init__()
    
     def separate(self):
-        make_directories(make_voc_dir(self.namespace.voc))
-        populate_train_test_val(self.namespace.voc,self.namespace.images)
+        common.make_directories(make_voc_dir(namespace.voc))
+        populate_train_test_val(namespace.voc,namespace.images)
         
 def main():
     sep = Separator()
