@@ -118,14 +118,14 @@ class JsonToPascalVoc(Parser):
     def voc(self, label=None):
         path = ''
         path =[x for x in voc_path if (x.split("_")[1] == str(namespace.json).split("_")[1])]
-        common.make_directories(path[0] +'single/')
+        common.make_directory('{}single/'.format(path[0]))
         
         print ("Convert json to voc")
         # Iterate through json annotations data
         for f in os.listdir(str(namespace.json)):
-            fname = str(namespace.json) + f
+            fname = os.path.join( str(namespace.json) , f)
             if os.path.isfile(fname):
-                fname = (namespace.images + f).split(".json")[0] + ".jpg"
+                fname = os.path.join(namespace.images , f).split(".json")[0] + ".jpg"
                 if os.path.isfile(fname):
                     img = Image.open(fname)
                     w, h = img.size
@@ -134,7 +134,7 @@ class JsonToPascalVoc(Parser):
                     args_dict = {'fname':fname, 'labels':labels, 'coords':coords, 'w':w, 'h':h}
                     annotation = self.to_pasvoc_xml(args_dict,genders, ages)
                     et = etree.ElementTree(annotation)
-                    et.write(path[0]+'single/' + f.split(".json")[0] + ".xml", pretty_print=True)
+                    et.write('{0}{1}{2}{3}'.format(path[0],'single/', f.split(".json")[0], ".xml"), pretty_print=True)
                     
 def main():
     voc = JsonToPascalVoc()

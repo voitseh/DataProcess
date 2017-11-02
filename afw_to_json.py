@@ -15,10 +15,6 @@ from six.moves import cPickle as pickle
 
 # This script is run from console terminal
 # Sample: C:\Users\User>python afw_to_json.py
-# You can also specify images and annotations subfolder in dataset archive
-# you will extract files from wich.
-# Sample: python afw_to_json.py --subfolder testimages/
-# By defoult subfolder path for images & annotations extraction: "testimages/"
 
 dataset_archive = "AFW.zip"
 imgs_and_anns_subfolder = "testimages/"
@@ -70,19 +66,18 @@ def parse_afw(data):
 
 class AfwToJson(Parser):
     def __init__(self):
+        common.make_directories(directories)
+        extract_archive(dataset_archive, imgs_and_anns_destination)
+        common.copy_files(os.path.join(imgs_and_anns_destination,imgs_and_anns_subfolder), imgs_and_anns_destination)
+        common.remove_directory(os.path.join(imgs_and_anns_destination,imgs_and_anns_subfolder))
         super(AfwToJson, self).__init__()
-
-    common.remove_directories(directories)
-    common.make_directories(directories)
-    extract_archive(dataset_archive, imgs_and_anns_destination)
-    common.copy_files(os.path.join(imgs_and_anns_destination,imgs_and_anns_subfolder), imgs_and_anns_destination)
-    common.remove_directory(os.path.join(imgs_and_anns_destination,imgs_and_anns_subfolder))
 
     def parse(self, filename):
         with h5py.File(filename) as f:
             self.objects = parse_afw(f)
             for i in self.objects:
-                with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                file = os.path.join(json_dir, i["filename"].split('.')[0])
+                with open("{}.json".format(file), "wt") as out_file:
                     out_file.write(str(i))
 
 def main():

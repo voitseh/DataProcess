@@ -9,10 +9,6 @@ from Utils import common
 ###########################################################
 #This script is run from console terminal
 #Sample: C:\Users\User>python imdb_wiki_to_json.py
-#You can also specify images and annotations subfolder in dataset archive
-#you will extract files from wich.
-#Sample: python imdb_wiki_to_json.py --subfolder  wiki_crop/
-#By defoult subfolder path for images & annotations extraction: "wiki_crop/"
 
 dataset_archive = "wiki_crop.tar"
 imgs_and_anns_subfolder = "wiki_crop/"
@@ -37,8 +33,7 @@ def calc_age(taken, dob):
 def imgs_to_single_folder():
     #Copy images to single folder
     for i in range(subdir_count):
-        print(imgs_and_anns_destination + imgs_and_anns_subfolder + "0" + str(i) + "/")
-        subdir.append(imgs_and_anns_destination + imgs_and_anns_subfolder + "0" + str(i) + "/") if i < 10 else  subdir.append(imgs_and_anns_destination+ imgs_and_anns_subfolder +str(i)+"/")
+        subdir.append('{0}{1}{2}{3}{4}'.format(imgs_and_anns_destination, imgs_and_anns_subfolder, "0", str(i), "/")) if i < 10 else  subdir.append('{0}{1}{2}{3}'.format(imgs_and_anns_destination,imgs_and_anns_subfolder, str(i), "/"))
         common.copy_files(subdir[i], imgs_and_anns_destination)
 
 class ImdbWikiToJson(Parser):
@@ -47,11 +42,6 @@ class ImdbWikiToJson(Parser):
         self.objects = []   
         self.object_info = {}
         self.coords = []
-        super(ImdbWikiToJson, self).__init__()
-    
-    def parse(self):
-        
-        common.remove_directories(directories)
         common.make_directories(directories)
         extract_archive(dataset_archive, imgs_and_anns_destination)
         imgs_to_single_folder()
@@ -59,6 +49,9 @@ class ImdbWikiToJson(Parser):
         for i in range(subdir_count):
             common.remove_directory(subdir[i])
 
+        super(ImdbWikiToJson, self).__init__()
+    
+    def parse(self):
         """
             Definition: Make annotations directory for wiki annotations and populate it with separate ann files.
             Returns: None
@@ -92,7 +85,8 @@ class ImdbWikiToJson(Parser):
             self.objects.append(self.object_info.copy())
                 
         for i in self.objects:
-            with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+            file = os.path.join(json_dir, i["filename"].split('.')[0])
+            with open("{}.json".format(file), "wt") as out_file:
                 out_file.write(str(i))
     
 def main():

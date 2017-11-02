@@ -4,31 +4,29 @@ from PIL import Image
 
 def copy_files(from_dir_path, destination_dir_path):
     if os.path.exists(from_dir_path):
-        if not os.path.exists(destination_dir_path):  make_directory(destination_dir_path)
         for filename in glob.glob(os.path.join( from_dir_path, "*.*")):
             copy_file(filename, destination_dir_path)
-    else:  print(from_dir_path + " is not exist!")
+    else: 
+         print("{} is not exist!".format(from_dir_path))
 
 def copy_file(file, destination_dir_path):
-    if not os.path.exists(destination_dir_path):  make_directory(destination_dir_path)
     if os.path.isfile(file):
         shutil.copy(file, destination_dir_path)
-    else:  print(file + " not found!")
-    
+    else:  
+        print("{} not found!".format(file))
 
 def remove_directory(directory_path):
     if os.path.isdir(directory_path):
         shutil.rmtree(directory_path)
     else: 
-         print(directory_path + " is already deleted!")
+         print("{} is already deleted!".format(directory_path))
 
 def remove_directories(dir_list):
     if type(dir_list) == list:
         for i in range(len(dir_list)):
-            if os.path.isdir(dir_list[i]):
-                shutil.rmtree(dir_list[i])
-            else:
-                 print(dir_list[i] + " is already deleted!")
+            remove_directory(dir_list[i])
+    else:
+        print("Type of {} mast be 'list'".format(dir_list))
 
 def make_directory(directory_path):
     if not os.path.exists(directory_path):
@@ -38,13 +36,15 @@ def make_directories(dir_list):
     if type(dir_list) == list:
         for i in range(len(dir_list)):
             make_directory(dir_list[i])
-    else:print("Type of "+dir_list+" mast be 'list'")
+    else:
+        print("Type of {} mast be 'list'".format(dir_list))
 
 def png_to_jpg_converter(destination_path, filename):
-    if not os.path.exists(destination_path):  make_directory(destination_path)
     if os.path.isfile(filename):
         im = Image.open(filename)
-        im.save(destination_path + filename.split("/")[-1].split(".png")[0] + ".jpg","jpeg")
-    else: print(filename + " not found!")
+        file = os.path.join(destination_path , filename.split("/")[-1].split(".png")[0])
+        im.save("{}.jpg".format(file),"jpeg")
+    else: 
+        print("{} not found!".format(filename))
     
 

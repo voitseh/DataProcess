@@ -43,7 +43,8 @@ def make_divide_ann():
         # Iterate through wider annotation data
         for line in file:
             if line[-5:-1] == ".jpg":
-                f= open(divide_ann_folder + line.split("/")[1].split(".jpg")[0]+'.txt',"w+")
+                _file = os.path.join(divide_ann_folder, line.split("/")[1].split(".jpg")[0]) 
+                f= open('{}.txt'.format(_file),"w+")
             else:
                 l = line.split(" ")
                 file_lines_count =int(line.split("/")[0]) if len(l) < 2 else  f.write(line)
@@ -54,33 +55,32 @@ def rename_files(folder_path):
         for old_name in os.listdir(folder_path):
             new_name = old_name.split("--")[0]
             os.rename(os.path.join(folder_path, old_name),os.path.join(folder_path, new_name))
-    else:  print(folder_path + " is not exist!")
+    else:  
+        print("{} is not exist!".format(folder_path))
 
 def single_folder():
     for i in range(subdir_count):
         subdir.append( imgs_subfolder+str(i)+"/")
-        common.copy_files(dir_imgs_will_be_extracted_to+subdir[i], dir_imgs_will_be_extracted_to)
+        common.copy_files(os.path.join(dir_imgs_will_be_extracted_to, subdir[i]), dir_imgs_will_be_extracted_to)
 
 class WiderToJson(Parser):
     
     def __init__(self):
-       super(WiderToJson, self).__init__()
-
-    def parse(self):
-        """
-        Definition: Parses divide_ann file to extract bounding boxcoordintates.
-        """
-        common.remove_directories(directories)
         common.make_directories(directories)
         extract_archive(imgs_dataset_archive, dir_imgs_will_be_extracted_to)
         extract_archive(anns_dataset_archive, wider_dir)
         make_divide_ann()
         #rename imgs subfolders to format "1"-"61"
-        rename_files(os.path.join(dir_imgs_will_be_extracted_to+imgs_subfolder))
+        rename_files(os.path.join(dir_imgs_will_be_extracted_to, imgs_subfolder))
         #Copy images to single folder
         single_folder()
         common.remove_directory(os.path.join(dir_imgs_will_be_extracted_to,"WIDER_train"))
+        super(WiderToJson, self).__init__()
 
+    def parse(self):
+        """
+        Definition: Parses divide_ann file to extract bounding boxcoordintates.
+        """
         objects = []   
         object_info = {}
         for f in os.listdir(divide_ann_folder):

@@ -8,7 +8,6 @@ Usage :
 '''
 import numpy as np
 import cv2
-from PIL import Image
 import pandas as pd
 import json
 import os, glob
@@ -22,9 +21,17 @@ import xml.etree.cElementTree as etree
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--images_dir", required = True, help = "Directory of images")
-ap.add_argument("--ann_dir", required = False, help = "Directory with annotations")
+ap.add_argument("--ann_dir", required = True, help = "Directory with annotations")
 ap.add_argument("--index", default='0',required = True, help = "Label index in CSV file to display (-1 to show all)")
 args = vars(ap.parse_args())
+
+class ShowBdgBoxArgs():
+    def __init__(self, bound_boxes, gender = None, age = None):
+        self.bound_boxes = bound_boxes
+        self.gender = gender
+        self.age = age
+    def get_args(self):
+        return self.bound_boxes, self.gender, self.age
 
 def list_files(folder, file_format='.jpg'):
     """
@@ -39,89 +46,75 @@ def get_filename(path):
     with_extension = os.path.basename(path)
     return os.path.splitext(with_extension)[0]
 
-def show_image_with_label(title, image):
-    cv2.imshow(title, image)
-    while cv2.getWindowProperty(title, 0) >= 0 :
+def draw_text(image,Text,width,height,font=cv2.FONT_HERSHEY_SIMPLEX,size=0.5,color=[0, 100, 0]):
+    thick = int(sum(image.shape[:2]) // 600)
+    cv2.putText(image,Text,(width-thick,height-thick),font,size,color,thick)
+
+def show_gender(image,gender,posX,posY):
+    Text = "{}".format("M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
+    draw_text(image,Text,posX,posY)
+
+def show_age(image,age,posX,posY):
+    Text = "{}".format(int(age))
+    draw_text(image,Text,posX,posY)
+
+def show_image(image):
+    cv2.imshow('Image', image)
+    while cv2.getWindowProperty('Image', 0) >= 0 :
         val = cv2.waitKey(100)
         if val != 255:
             break
-    cv2.destroyWindow(title)
-
-def draw_text(dict):
-    if dict['Text'] is not None:
-       cv2.putText(dict['vcat'],dict['Text'],(dict['w'],dict['h']),dict['font'],dict['size'],dict['thickness'])
-
-def show_image(image, gender=None, age=None):
-    # image without labels
-    if age == None:
-        show_image_with_label('Image',image)
-    # image with gender & age labels
-    else:
-        Text = "{}, {}".format(int(age),"M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
-        height, width, ch = image.shape
-        #--- Here I am creating the border---
-        black = [0,0,0]     #---Color of the border---
-        constant=cv2.copyMakeBorder(image,5,5,5,5,cv2.BORDER_CONSTANT,value=black )
-        #--- Here I created a violet background to include the text ---
-        violet= np.zeros((30, constant.shape[1], 3), np.uint8)
-        violet[:] = (255, 0, 180) 
-        #--- I then concatenated it vertically to the image with the border ---
-        vcat = cv2.vconcat((violet, constant))
-        #--- Now I included some text ---
-        font = cv2.FONT_HERSHEY_SIMPLEX
-        dict = {'vcat':vcat,'Text':Text, 'w':int((width-15)/2),'h':20, 'font':font, 'size':0.5, 'thickness':2}
-        draw_text(dict)
-        show_image_with_label('Image',vcat)
+    cv2.destroyWindow('Image')
     
-def draw_rectangle(args):
-    if args['center_with_size']:
-        cx, cy, w, h = args['bound_box']
+def draw_rectangle(image,rectangle, center_with_size=False, color=[0, 255, 0]):
+    if center_with_size:
+        cx, cy, w, h = rectangle
         left, right = int(cx - w/2), int(cx + w/2)
         top, bottom = int(cy - h/2), int(cy + h/2)
     else:
-        left, top, right, bottom = args['bound_box']
-        h, w, c = args['image'].shape
-        if w > 650:
-            k = 10
-        else:
-            k = 2
-    return cv2.rectangle(args['image'],(left,top),(right, bottom),args['color'],int(k))
+        left, top, right, bottom = rectangle
+        thick = int(sum(image.shape[:2]) // 300)
+        
+    return cv2.rectangle(image, (left,top),(right, bottom),color,thick)
 
-def draw_bounding_box(args):
-    result = draw_rectangle(args)
+def draw_bounding_box(image, bound_box, center_with_size=True, color=(0,255,0)):
+    result = draw_rectangle(image, bound_box, center_with_size, color)
     return result
 
 def load_image(filename, flags=-1):
     if not os.path.exists(filename):
-        #print (\"file {0} not exists\".format(filename))
         return None
     return cv2.imread(filename, flags)
-#Parameters:  Args[0]-filename,Args[1]-bounding boxes, Args[2]-gender, Args[3]-age
-def show_bound_box(Args):
-    image = load_image(Args[0], cv2.IMREAD_COLOR)
-    objInfo = {'image':image, 'bound_box':Args[1], 'center_with_size':True, 'color':(0,255,0)}
+
+def show_labels(image,bound_boxes,gender,age):
+    deltaX = 20
+    deltaY = 5
+    xn, yn, xx, yx = bound_boxes
+    if gender != None:
+        show_gender(image,gender,xn,(yn-deltaY))
+    if age != None:
+        show_age(image,age,xn+deltaX,(yn-deltaY))
+
+def show_bound_box_and_labels(filename, bound_boxes, gender=None, age=None):
+    image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
         return
-    if type(Args[1]) != int:
-        objInfo['center_with_size'] = False
-        for bound_box in Args[1]:
-            objInfo['bound_box'] = bound_box  
-            result = draw_bounding_box(objInfo)
+    if type(bound_boxes[1]) ==  list:
+        for bound_box in bound_boxes:
+             result = draw_bounding_box(image, bound_box, center_with_size=False)
+             show_labels(image, bound_box, gender, age )
     else:
-        objInfo['center_with_size'] = False
-        result = draw_bounding_box(objInfo)
-    show_image(result, Args[2], Args[3])
-    
+         result = draw_bounding_box(image, bound_boxes, center_with_size=False)
+         show_labels(image, bound_boxes, gender, age)
+    show_image(result)
+
 def parse_from_pascal_voc_format(filename):
     """
        Returns: 
             Bounding box: ints xmin, ymin, xmax, ymax - 
                           represents bounding box cornets coordinates
     """
-    bounding_boxes = []
     bounding_box = []
-    gender = None
-    age = None
     in_file = open(filename)
     tree=etree.parse(in_file)
     root = tree.getroot()
@@ -133,75 +126,61 @@ def parse_from_pascal_voc_format(filename):
         yn = int(float(xmlbox.find('ymin').text))
         yx = int(float(xmlbox.find('ymax').text))
         bounding_box = [xn,yn,xx,yx]
-        bounding_boxes.append( bounding_box)
+        objects = ShowBdgBoxArgs(bounding_box)
         if obj.find('gender') != None:
             if obj.find('gender').text != "None":
-                gender = float(obj.find('gender').text)
+                objects.gender = float(obj.find('gender').text)
             else:
-                gender = "nan"
-            age = float(obj.find('age').text)
+                objects.gender = "nan"
+            objects.age = float(obj.find('age').text)
+    return objects.get_args()
     in_file.close()
-    if gender != None:
-        return (bounding_boxes,gender,age)
-    else:
-        return(bounding_boxes)
+   
     
 def parse_json_annotation(filename):
-        
-    bdn_bxs = []
-    gender = None
-    age = None
     f= open(filename)
     for line in f:
         line = line.replace("'", '"')
         line = line.replace("nan", 'null')
         my_dict = json.loads(line)
         for obj in my_dict["objects"]:
-            bdn_bxs.append(obj["bounding_box"])
+            objects = ShowBdgBoxArgs(obj["bounding_box"])
             if "gender" in obj:
                 if obj["gender"] != None:
-                    gender = float(obj["gender"])
+                    objects.gender = float(obj["gender"])
                 else:
-                    gender = "nan"
-                age = float(obj["age"])
-                f.close()
-                return  (bdn_bxs, gender, age)
+                    objects.gender = "nan"
+            if "age" in obj:
+                objects.age = float(obj["age"])
+        return objects.get_args()
     f.close()
-    return  bdn_bxs
+   
 
 def process_xml_ann(annotations_folder, images, index):
-    bounding_box = []
-    gender = None
-    age = None
     annotations_xml = sorted(list_files(annotations_folder, '.xml'))
     if annotations_xml != []:
-        annfile = annotations_folder+get_filename(images[index])+".xml"
+        annfile = "{}{}.xml".format(annotations_folder,get_filename(images[index]))
         if os.path.isfile(annfile) and os.path.isfile(images[index]):
-            if type(parse_from_pascal_voc_format(annfile)[-1]) != float:
-                bounding_box = parse_from_pascal_voc_format(annfile)
-            else:
-                bounding_box, gender, age = parse_from_pascal_voc_format(annfile)
-            return images[index],bounding_box,gender, age
+            bounding_box, gender, age = parse_from_pascal_voc_format(annfile)
+            objects = ShowBdgBoxArgs(bounding_box, gender, age)
+            return images[index], objects.bound_boxes, objects.gender, objects.age
 
 def process_json_ann(annotations_folder, images, index):
-    bounding_box = []
-    gender = None
-    age = None
     annotations_json = sorted(list_files(annotations_folder, '.json'))
     if annotations_json != []:
-        annfile = annotations_folder+get_filename(images[index])+".json"
+        annfile = "{}{}.json".format(annotations_folder,get_filename(images[index]))
         if os.path.isfile(annfile) and os.path.isfile(images[index]):
-            if type(parse_json_annotation( annfile)[-1]) != float:
-                bounding_box = parse_json_annotation( annfile)
-            else:
-                bounding_box, gender, age = parse_json_annotation( annfile)
-            return images[index],bounding_box,gender, age
+            bounding_box, gender, age = parse_json_annotation( annfile)
+            objects = ShowBdgBoxArgs(bounding_box, gender, age)
+            return images[index], objects.bound_boxes, objects.gender, objects.age
 
 def process_single(annotations_folder, images_folder, index):
     images = sorted(list_files(images_folder, '.jpg'))
-    objects = process_xml_ann(annotations_folder, images, index)
-    objects = process_json_ann(annotations_folder, images, index)
-    show_bound_box(objects)
+    if annotations_folder.split('_')[0] == 'datasets/JSON':
+        filename, bound_boxes, gender, age = process_json_ann(annotations_folder, images, index)
+    else:
+        filename, bound_boxes, gender, age = process_xml_ann(annotations_folder, images, index)
+    show_bound_box_and_labels(filename, bound_boxes, gender, age)
 
 def _process_dir(annotations_folder, images_folder, index=-1):
     process_single(annotations_folder,images_folder,  index)

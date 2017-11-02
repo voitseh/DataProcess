@@ -31,17 +31,14 @@ namespace = ap.parse_args(sys.argv[1:])
 class InriaToJson(Parser):
    
     def __init__(self):
-       super(InriaToJson, self).__init__()
-    
-    def parse(self):
-        
-        common.remove_directories(directories)
         common.make_directories(directories)
         extract_archive(dataset_archive, inria_path)
         for filename in os.listdir(os.path.join(inria_path, namespace.images)):
-            common.png_to_jpg_converter(imgs_destination, inria_path+ namespace.images+ filename)
+            common.png_to_jpg_converter(imgs_destination, '{}{}{}'.format(inria_path,namespace.images,filename))
         common.copy_files(os.path.join(inria_path, namespace.annotations), anns_destination)
-
+        super(InriaToJson, self).__init__()
+    
+    def parse(self):
         """
         Definition: Parses label file to extract label and bounding box
         coordintates.
@@ -72,9 +69,10 @@ class InriaToJson(Parser):
                 objects.append(object_info.copy())
                 tmp = []
             for i in objects:
-                with open(json_dir+i["filename"].split('.')[0]+".json", "wt") as out_file:
+                file = os.path.join(json_dir, i["filename"].split('.')[0])
+                with open("{}.json".format(file), "wt") as out_file:
                     out_file.write(str(i))
-
+                
 def main():
     inria =  InriaToJson()
     inria.parse()
