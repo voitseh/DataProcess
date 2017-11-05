@@ -20,16 +20,20 @@ import xml.etree.cElementTree as etree
 #################################################################################
 
 ap = argparse.ArgumentParser()
+# Use everywhere same arguments (images, annotations)
 ap.add_argument("--images_dir", required = True, help = "Directory of images")
 ap.add_argument("--ann_dir", required = True, help = "Directory with annotations")
 ap.add_argument("--index", default='0',required = True, help = "Label index in CSV file to display (-1 to show all)")
 args = vars(ap.parse_args())
 
+# TODO Bad implementation 
 class ShowBdgBoxArgs():
     def __init__(self, bound_boxes, gender = None, age = None):
         self.bound_boxes = bound_boxes
         self.gender = gender
         self.age = age
+        
+    # TODO remove function from here (Difference between struct and class) 
     def get_args(self):
         return self.bound_boxes, self.gender, self.age
 
@@ -46,14 +50,19 @@ def get_filename(path):
     with_extension = os.path.basename(path)
     return os.path.splitext(with_extension)[0]
 
+# TODO remove widht, heights from parameters 
+# Use position (x, y) instead
 def draw_text(image,Text,width,height,font=cv2.FONT_HERSHEY_SIMPLEX,size=0.5,color=[0, 100, 0]):
     thick = int(sum(image.shape[:2]) // 600)
     cv2.putText(image,Text,(width-thick,height-thick),font,size,color,thick)
-
+    
+# Use position tuple (x, y) instead
 def show_gender(image,gender,posX,posY):
+    # TODO this if .. else should not be here.
+    # This script for visualization only
     Text = "{}".format("M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
     draw_text(image,Text,posX,posY)
-
+# Use position tuple (x, y) instead
 def show_age(image,age,posX,posY):
     Text = "{}".format(int(age))
     draw_text(image,Text,posX,posY)
@@ -86,6 +95,7 @@ def load_image(filename, flags=-1):
         return None
     return cv2.imread(filename, flags)
 
+# TODO too many args
 def show_labels(image,bound_boxes,gender,age):
     deltaX = 20
     deltaY = 5
@@ -95,6 +105,7 @@ def show_labels(image,bound_boxes,gender,age):
     if age != None:
         show_age(image,age,xn+deltaX,(yn-deltaY))
 
+# TODO too many args
 def show_bound_box_and_labels(filename, bound_boxes, gender=None, age=None):
     image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
