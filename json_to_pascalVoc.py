@@ -15,18 +15,22 @@ from lxml import etree
 # This script is run from  console terminal
 # Sample: python json_to_pascalVoc.py --json "datasets/JSON_AFW/" --images "datasets/AFW/"
 
+# TODO no datasets mention in file (remove from here)
 voc_path = ['datasets/VOC_INRIA/', 'datasets/VOC_AFW/', 'datasets/VOC_WIDER/', 'datasets/VOC_IMDB-WIKI/']
 
 ap = argparse.ArgumentParser()
+# TODO not JSON_AFW, AFW
 ap.add_argument("--json", default="JSON_AFW", required = True, help = "Type json folder path to receive annotations from")
 ap.add_argument("--images", default="AFW", required = True, help = "Type images folder path to receive images from")
 namespace = ap.parse_args(sys.argv[1:])
 
+# TODO no need to inherit from Parser. You do not use parse() function
 class JsonToPascalVoc(Parser):
     
     def __init__(self):
         super(JsonToPascalVoc, self).__init__()
    
+    # TODO same problem as in visualisation tool (if too many arguments)
     def to_pasvoc_xml(self,args_dict,genders=None,ages=None):
         annotation = etree.Element('annotation')
         filename = etree.Element('filename')
