@@ -23,6 +23,7 @@ def remove_directory(directory_path):
 
 def remove_directories(dir_list):
     if type(dir_list) == list:
+        # TODO better use : for dir in dir_list: remove_directory(dir)
         for i in range(len(dir_list)):
             remove_directory(dir_list[i])
     else:
@@ -34,11 +35,13 @@ def make_directory(directory_path):
 
 def make_directories(dir_list):
     if type(dir_list) == list:
+        # TODO better use : for dir in dir_list: make_directory(dir)
         for i in range(len(dir_list)):
             make_directory(dir_list[i])
     else:
         print("Type of {} mast be 'list'".format(dir_list))
-
+        
+# TODO args: first filename, second - destination_path
 def png_to_jpg_converter(destination_path, filename):
     if os.path.isfile(filename):
         im = Image.open(filename)
