@@ -20,12 +20,16 @@ namespace = ap.parse_args(sys.argv[1:])
 TRAIN_COEF = 0.6
 VAL_COEF = 0.8
 
+# TODO Format not working
 directories_list = ["{}/train/images/".format(namespace.annotations.split('single')[0]), "{}/train/annotations/".format(namespace.annotations.split('single')[0]), "{}/val/images/".format(namespace.annotations.split('single')[0]), "{}/val/annotations/".format(namespace.annotations.split('single')[0]), "{}/test/images/".format(namespace.annotations.split('single')[0]), "{}/test/annotations/".format(namespace.annotations.split('single')[0]) ]
 
+#TODO args: files, src, dst
 def copy_files(from_dir_path, files_list, destination_dir_path):
     for file in files_list:
         common.copy_file(os.path.join(from_dir_path, file), destination_dir_path)
  
+# TODO populate_train_test_val_annotations and populate_train_test_val_images
+# are the same functions. Make one instead two
 def populate_train_test_val_annotations(annotations_path):
     annotations_list = os.listdir(annotations_path)
     annotations_count = len(annotations_list)
