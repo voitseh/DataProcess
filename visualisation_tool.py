@@ -21,13 +21,17 @@ from  collections import namedtuple
 #################################################################################
 
 ap = argparse.ArgumentParser()
+# TODO make images, and annotations as everywhere
 ap.add_argument("--images_dir", required = True, help = "Directory of images")
 ap.add_argument("--ann_dir", required = True, help = "Directory with annotations")
 ap.add_argument("--index", default='0',required = True, help = "Label index in CSV file to display (-1 to show all)")
 args = vars(ap.parse_args())
 
 # tuple for x and y coordinates
+# TODO remove this tuple
+# When I told you to use tuple I mean (x, y) instead x, y
 x_y_tuple = namedtuple("x_y_tuple", "x y")
+
 # struct for bound boxes, gender and age
 class BdgBoxAndLabelsArgs:
     bound_boxes = None
@@ -47,19 +51,24 @@ def get_filename(path):
     with_extension = os.path.basename(path)
     return os.path.splitext(with_extension)[0]
 
+# TODO args: image, text (lower case), point - (x, y) ..
 def draw_text(image,Text,x_y_tuple,font=cv2.FONT_HERSHEY_SIMPLEX,size=0.5,color=[0, 100, 0]):
     thick = int(sum(image.shape[:2]) // 600)
     cv2.putText(image,Text,(x_y_tuple[0]-thick, x_y_tuple[1]-thick),font,size,color,thick)
-
+    
+# TODO image, gender, point
 def show_gender(image,gender,x_y_tuple):
+    # TODO variables - small letter
     Text = "{}".format("M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
+    
     draw_text(image,Text,x_y_tuple)
-
+# TODO image, gender, point
 def show_age(image,age,x_y_tuple):
     Text = "{}".format(int(age))
     draw_text(image,Text,x_y_tuple)
 
 def show_image(image):
+    # TODO three times 'Image' - make variable (and argument)
     cv2.imshow('Image', image)
     while cv2.getWindowProperty('Image', 0) >= 0 :
         val = cv2.waitKey(100)
@@ -86,20 +95,25 @@ def load_image(filename, flags=-1):
     if not os.path.exists(filename):
         return None
     return cv2.imread(filename, flags)
+
 # shows labels:gender and/or age.Paremeters:image,BdgBoxAndLabelsArgs.Returns:None
 def show_labels(image,BdgBoxAndLabelsArgs) :
     deltaX = 20
     deltaY = 5
+    # TODO why are you showing only one bound box -> Show All using for .. loop
     xn, yn, xx, yx = BdgBoxAndLabelsArgs.bound_boxes[0]
     if BdgBoxAndLabelsArgs.gender != None:
         show_gender(image,BdgBoxAndLabelsArgs.gender,(xn,yn-deltaY))
     if BdgBoxAndLabelsArgs.age != None:
         show_age(image,BdgBoxAndLabelsArgs.age,(xn+deltaX,yn-deltaY))
 
+# TODO rename to show_annotation, 
+# TODO do not use BdgBoxAndLabelsArgs as argument, change annotation variable name instead
 def show_bound_box_and_labels(filename, BdgBoxAndLabelsArgs):
     image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
         return
+    # TODO I don't understand this check. Why bound_boxes[0], why check on list? 
     if type(BdgBoxAndLabelsArgs.bound_boxes[0]) ==  list:
         for bound_box in BdgBoxAndLabelsArgs.bound_boxes:
             result = draw_bounding_box(image, bound_box, center_with_size=False)
@@ -130,6 +144,9 @@ def parse_from_pascal_voc_format(filename):
         objects = BdgBoxAndLabelsArgs()
         objects.bound_boxes = []
         objects.bound_boxes.append(bounding_box)
+        
+        # TODO something wrong down here. 
+        # Why two times you use find('gender')
         if obj.find('gender') != None:
             if obj.find('gender').text != "None":
                 objects.gender = float(obj.find('gender').text)
@@ -137,6 +154,7 @@ def parse_from_pascal_voc_format(filename):
                 objects.gender = "nan"
             objects.age = float(obj.find('age').text)
     return objects
+    # TODO any line of code after return won't work. You do not close file in this function 
     in_file.close()
    
     
@@ -158,9 +176,13 @@ def parse_json_annotation(filename):
             if "age" in obj:
                 objects.age = float(obj["age"])
         return objects
+    # TODO file won't be closed after return
     f.close()
    
 
+# TODO make process_xml_ann, process_json_ann - same function.
+# They are similar except parse_from_pascal_voc_format, parse_json_annotation.
+# You did 20 lines of code with 2 different lines
 def process_xml_ann(annotations_folder, images, index):
     annotations_xml = sorted(list_files(annotations_folder, '.xml'))
     if annotations_xml != []:
