@@ -26,6 +26,7 @@ def extract_archive(archive, destination):
         extract_zip(archive, destination)
     elif file_extension == '.tar':
         extract_tar(archive, destination)
+    # TODO else: error that file format not supported
 
 class Parser(object):
     def __init__(self):
