@@ -5,6 +5,7 @@ import random
 from Parser import *
 from Utils import common
 from PIL import Image
+from  collections import namedtuple
 
 ###########################################################
 ##########        train/test/val separate        ##########
@@ -19,35 +20,24 @@ namespace = ap.parse_args(sys.argv[1:])
 
 TRAIN_COEF = 0.6
 VAL_COEF = 0.8
+dst_tuple = namedtuple("dst_tuple", "train_dst val_dist test_dist")
 
 directories_list = ["{}/train/images/".format(namespace.annotations.split('single')[0]), "{}/train/annotations/".format(namespace.annotations.split('single')[0]), "{}/val/images/".format(namespace.annotations.split('single')[0]), "{}/val/annotations/".format(namespace.annotations.split('single')[0]), "{}/test/images/".format(namespace.annotations.split('single')[0]), "{}/test/annotations/".format(namespace.annotations.split('single')[0]) ]
 
-def copy_files(from_dir_path, files_list, destination_dir_path):
-    for file in files_list:
-        common.copy_file(os.path.join(from_dir_path, file), destination_dir_path)
- 
-def populate_train_test_val_annotations(annotations_path):
-    annotations_list = os.listdir(annotations_path)
-    annotations_count = len(annotations_list)
-    
-    annotations_train_list = annotations_list[:int(annotations_count*TRAIN_COEF)]
-    copy_files(annotations_path, annotations_train_list, directories_list[1])
-    annotations_val_list = annotations_list[int(annotations_count*TRAIN_COEF):int(annotations_count*VAL_COEF)]
-    copy_files(annotations_path, annotations_val_list, directories_list[3])
-    annotations_test_list = annotations_list[int(annotations_count*VAL_COEF):]
-    copy_files(annotations_path, annotations_test_list, directories_list[5])
+def copy_files(files, src, dst):
+    for file in files:
+        common.copy_file(os.path.join(src, file), dst)
 
-def populate_train_test_val_images(images_path):
-    images_list = os.listdir(images_path)
-    images_count = len(images_list)
+def populate_train_test_val(src, dst_tuple):
+    files_list = [file for file in os.listdir(src) if not file.endswith(".mat")]
+    files_count = len(files_list)
     
-    images__train_list = images_list[:int(images_count*TRAIN_COEF)]
-    copy_files(images_path, images__train_list, directories_list[0])
-    images__val_list = images_list[int(images_count*TRAIN_COEF):int(images_count*VAL_COEF)]
-    copy_files(images_path, images__val_list, directories_list[2])
-    images__test_list = images_list[int(images_count*VAL_COEF):]
-    copy_files(images_path, images__test_list, directories_list[4])
-
+    files_train_list = files_list[:int(files_count*TRAIN_COEF)]
+    copy_files(files_train_list, src, dst_tuple[0])
+    files_val_list = files_list[int(files_count*TRAIN_COEF):int(files_count*VAL_COEF)]
+    copy_files(files_val_list, src, dst_tuple[1])
+    files_test_list = files_list[int(files_count*VAL_COEF):]
+    copy_files(files_test_list, src, dst_tuple[2])
 
 def main():
     if not namespace.annotations: 
@@ -57,8 +47,10 @@ def main():
             print ("Please specify images folder")  
         else:
             common.make_directories(directories_list)
-            populate_train_test_val_annotations(namespace.annotations)
-            populate_train_test_val_images(namespace.images)
+            #for annotations
+            populate_train_test_val(namespace.annotations, (directories_list[1], directories_list[3], directories_list[5]))
+            #for images
+            populate_train_test_val(namespace.images, (directories_list[0], directories_list[2], directories_list[4]))
         exit(0)
     exit(-1)
 

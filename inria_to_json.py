@@ -34,7 +34,7 @@ class InriaToJson(Parser):
         common.make_directories(directories)
         extract_archive(dataset_archive, inria_path)
         for filename in os.listdir(os.path.join(inria_path, namespace.images)):
-            common.png_to_jpg_converter(imgs_destination, '{}{}{}'.format(inria_path,namespace.images,filename))
+            common.png_to_jpg_converter('{}{}{}'.format(inria_path,namespace.images,filename), imgs_destination)
         common.copy_files(os.path.join(inria_path, namespace.annotations), anns_destination)
         super(InriaToJson, self).__init__()
     
@@ -47,7 +47,7 @@ class InriaToJson(Parser):
         object_info = {}
         coords = []
         for f in os.listdir(anns_destination):
-            object_info['filename'] = f.split(".")[0]+".jpg"
+            object_info['filename'] = os.path.join(f.split(".")[0],".jpg")
             object_info['objects'] = []
 
             with open(anns_destination+f) as f:
