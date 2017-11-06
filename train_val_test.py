@@ -30,6 +30,7 @@ def copy_files(files, src, dst):
 
 # TODO where is random? 
 def populate_train_test_val(src, dst_tuple):
+    # TODO why from mat? 
     files_list = [file for file in os.listdir(src) if not file.endswith(".mat")]
     files_count = len(files_list)
     
