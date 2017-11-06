@@ -28,10 +28,24 @@ def copy_files(files, src, dst):
     for file in files:
         common.copy_file(os.path.join(src, file), dst)
 
+def randomize(items):
+    """
+        Shuffle data to make records order more random
+        Args: 
+            items: list
+        Returns: 
+            Shuffled lists
+    """
+    shuffled_index = list(range(len(items)))
+    random.seed(12345)
+    random.shuffle(shuffled_index)
+    result = [items[i] for i in shuffled_index]
+    return result
+
 def populate_train_test_val(src, dst_tuple):
-    files_list = [file for file in os.listdir(src) if not file.endswith(".mat")]
+    files_list = [file for file in os.listdir(src) if (file.endswith(".json") or file.endswith(".xml") or file.endswith(".jpg"))]
     files_count = len(files_list)
-    
+    files_list = randomize(files_list)
     files_train_list = files_list[:int(files_count*TRAIN_COEF)]
     copy_files(files_train_list, src, dst_tuple[0])
     files_val_list = files_list[int(files_count*TRAIN_COEF):int(files_count*VAL_COEF)]
