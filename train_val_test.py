@@ -23,7 +23,6 @@ VAL_COEF = 0.8
 dst_tuple = namedtuple("dst_tuple", "train_dst val_dist test_dist")
 
 directories_list = ["{}/train/images/".format(namespace.annotations.split('single')[0]), "{}/train/annotations/".format(namespace.annotations.split('single')[0]), "{}/val/images/".format(namespace.annotations.split('single')[0]), "{}/val/annotations/".format(namespace.annotations.split('single')[0]), "{}/test/images/".format(namespace.annotations.split('single')[0]), "{}/test/annotations/".format(namespace.annotations.split('single')[0]) ]
-<<<<<<< HEAD
 
 def copy_files(files, src, dst):
     for file in files:
@@ -47,19 +46,6 @@ def populate_train_test_val(src, dst_tuple):
     files_list = [file for file in os.listdir(src) if (file.endswith(".json") or file.endswith(".xml") or file.endswith(".jpg"))]
     files_count = len(files_list)
     files_list = randomize(files_list)
-=======
-
-def copy_files(files, src, dst):
-    for file in files:
-        common.copy_file(os.path.join(src, file), dst)
-
-# TODO where is random? 
-def populate_train_test_val(src, dst_tuple):
-    # TODO why from mat? 
-    files_list = [file for file in os.listdir(src) if not file.endswith(".mat")]
-    files_count = len(files_list)
-    
->>>>>>> ba358dc52c862418e2a92406be677f229a7a8c01
     files_train_list = files_list[:int(files_count*TRAIN_COEF)]
     copy_files(files_train_list, src, dst_tuple[0])
     files_val_list = files_list[int(files_count*TRAIN_COEF):int(files_count*VAL_COEF)]
