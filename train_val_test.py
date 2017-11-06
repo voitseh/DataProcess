@@ -28,6 +28,7 @@ def copy_files(files, src, dst):
     for file in files:
         common.copy_file(os.path.join(src, file), dst)
 
+# TODO where is random? 
 def populate_train_test_val(src, dst_tuple):
     files_list = [file for file in os.listdir(src) if not file.endswith(".mat")]
     files_count = len(files_list)
