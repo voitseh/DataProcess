@@ -28,9 +28,7 @@ args = vars(ap.parse_args())
 
 # struct for bound boxes, gender and age
 class BdgBoxAndLabelsArgs:
-    # TODO should be age, gender, bound_box (not boxes)
-    # one face has one bound box, one gender, one age
-    bound_boxes = None
+    bound_box = None
     gender = None
     age = None
    
@@ -58,9 +56,8 @@ def show_gender(image,gender,point):
 def show_age(image,age,point):
     text = "{}".format(int(age))
     draw_text(image,text,point)
-# TODO make 'Image' - as argument (alow to create window with different names)
-def show_image(image):
-    img = 'Image'
+
+def show_image(img, image):
     cv2.imshow(img, image)
     while cv2.getWindowProperty(img, 0) >= 0 :
         val = cv2.waitKey(100)
@@ -88,110 +85,96 @@ def load_image(filename, flags=-1):
         return None
     return cv2.imread(filename, flags)
 
-# TODO next description make like below
-# shows labels:gender and/or age.Paremeters:image,BdgBoxAndLabelsArgs.Returns:None
-
-def show_labels(image,annotation) :
+def show_annotation(filename, annotation):
     '''
         Shows item annotations.
         Args:
-            image : 
-            annotations:
-            
-        
+            filename: image file
+            annotation: bound_box,gender,age
+        Returns:
+            None
     '''
     deltaX = 20
     deltaY = 5
-    # TODO why bounding box[0]
-    xn, yn, xx, yx = annotation.bound_boxes[0]
-    if annotation.gender != None:
-        show_gender(image,annotation.gender,(xn,yn-deltaY))
-    if annotation.age != None:
-        show_age(image,annotation.age,(xn+deltaX,yn-deltaY))
-
-# shows bounding box or several bounding boxes and labels:gender and/or age.
-# paremeters:filename,annotation.Returns:None
-def show_annotation(filename, annotation):
     image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
         return
-    # here! we showing  bounding boxes +  labels:gender and/or age
-    for bound_box in annotation.bound_boxes:
-        result = draw_bounding_box(image, bound_box, center_with_size=False)
-        show_labels(image,annotation)
-    show_image(result)
+    for bnd_box in annotation.bound_box:
+        xn, yn, xx, yx = bnd_box
+        if annotation.gender != None:
+            show_gender(image,annotation.gender,(xn,yn-deltaY))
+        if annotation.age != None:
+            show_age(image,annotation.age,(xn+deltaX,yn-deltaY))
+        result = draw_bounding_box(image, bnd_box, center_with_size=False)
+    show_image('Image',result)
 
-def parse_from_pascal_voc_format(filename):
+def parse_voc_annotation(filename):
     """
        Returns: 
             Bounding box: ints xmin, ymin, xmax, ymax - 
                           represents bounding box cornets coordinates
     """
     bounding_box = []
-    # TODO change open() to with ... as f:
-    in_file = open(filename)
-    tree=etree.parse(in_file)
-    root = tree.getroot()
-    objects = BdgBoxAndLabelsArgs()
-    objects.bound_boxes = []
-    for obj in root.iter('object'):
-        current = list()              
-        xmlbox = obj.find('bndbox')
-        xn = int(float(xmlbox.find('xmin').text))
-        xx = int(float(xmlbox.find('xmax').text))
-        yn = int(float(xmlbox.find('ymin').text))
-        yx = int(float(xmlbox.find('ymax').text))
-        bounding_box = [xn,yn,xx,yx]
-        objects.bound_boxes.append(bounding_box)
-        gender = obj.find('gender')
-        # TODO do find gender like you do with age
-        # objects.gender = float(obj.find('gender').text)
-        if gender != None:
-            if gender.text != "None":
-                objects.gender = gender
-            else:
-                objects.gender = "nan"
-            objects.age = float(obj.find('age').text)
-    in_file.close()
+    with open(filename) as out_file:
+        in_file = open(filename)
+        tree=etree.parse(in_file)
+        root = tree.getroot()
+        objects = BdgBoxAndLabelsArgs()
+        objects.bound_box = []
+        for obj in root.iter('object'):
+            current = list()              
+            xmlbox = obj.find('bndbox')
+            xn = int(float(xmlbox.find('xmin').text))
+            xx = int(float(xmlbox.find('xmax').text))
+            yn = int(float(xmlbox.find('ymin').text))
+            yx = int(float(xmlbox.find('ymax').text))
+            bounding_box = [xn,yn,xx,yx]
+            objects.bound_box.append(bounding_box)
+            gender = obj.find('gender')
+            if gender != None:
+                if gender.text != "None":
+                    objects.gender = gender
+                else:
+                    objects.gender = "nan"
+                objects.age = float(obj.find('age').text)
     return objects
    
 def parse_json_annotation(filename):
-    f= open(filename)
-    objects = BdgBoxAndLabelsArgs()
-    objects.bound_boxes = []
-    for line in f:
-        line = line.replace("'", '"')
-        line = line.replace("nan", 'null')
-        my_dict = json.loads(line)
-        for obj in my_dict["objects"]:
-            objects.bound_boxes.append(obj["bounding_box"])
-            if "gender" in obj:
-                if obj["gender"] != None:
-                    objects.gender = float(obj["gender"])
-                else:
-                    objects.gender = "nan"
-            if "age" in obj:
-                objects.age = float(obj["age"])
-    f.close()
+    with open(filename) as f:
+        objects = BdgBoxAndLabelsArgs()
+        objects.bound_box = []
+        for line in f:
+            line = line.replace("'", '"')
+            line = line.replace("nan", 'null')
+            my_dict = json.loads(line)
+            for obj in my_dict["objects"]:
+                objects.bound_box.append(obj["bounding_box"])
+                if "gender" in obj:
+                    if obj["gender"] != None:
+                        objects.gender = float(obj["gender"])
+                    else:
+                        objects.gender = "nan"
+                if "age" in obj:
+                    objects.age = float(obj["age"])
     return objects
  
-# TODO same problem
-# Find a solution to make this function smaller. 
-# YOu have two similar parts of code in if .., else ..
+def process_ann(annotations_folder, ann_format, image):
+    annotations = sorted(list_files(annotations_folder, ann_format))
+    if annotations != []:
+        annfile = "{}{}{}".format(annotations_folder,get_filename(image),ann_format)
+        if os.path.isfile(annfile) and os.path.isfile(image):
+            if ann_format == '.xml':
+                objects = parse_voc_annotation(annfile)
+            elif ann_format == '.json':
+                objects = parse_json_annotation(annfile)
+    return objects
+
 def _process_dir(annotations_folder, images_folder, index=-1):
     images = sorted(list_files(images_folder, '.jpg'))
     if annotations_folder.split('_')[0] == 'datasets/JSON':
-        annotations_xml = sorted(list_files(annotations_folder, '.xml'))
-        if annotations_xml != []:
-            annfile = "{}{}.xml".format(annotations_folder,get_filename(images[index]))
-            if os.path.isfile(annfile) and os.path.isfile(images[index]):
-                objects = parse_from_pascal_voc_format(annfile)
-        else:
-            annotations_json = sorted(list_files(annotations_folder, '.json'))
-            if annotations_json != []:
-                annfile = "{}{}.json".format(annotations_folder,get_filename(images[index]))
-                if os.path.isfile(annfile) and os.path.isfile(images[index]):
-                    objects = parse_json_annotation( annfile)
+        objects = process_ann(annotations_folder, '.json', images[index])
+    else:
+        objects = process_ann(annotations_folder, '.xml', images[index])
     show_annotation(images[index], objects)
 
 def main(): 

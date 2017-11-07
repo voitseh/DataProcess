@@ -43,9 +43,7 @@ def randomize(items):
     return result
 
 def populate_train_test_val(src, dst_tuple):
-    # TODO make next statement extendable
-    # What if I want to add .png format check
-    files_list = [file for file in os.listdir(src) if (file.endswith(".json") or file.endswith(".xml") or file.endswith(".jpg"))]
+    files_list = [file for file in os.listdir(src) if (file.endswith(".json") or file.endswith(".xml") or file.endswith(".jpg") or file.endswith(".png"))]
     files_count = len(files_list)
     files_list = randomize(files_list)
     files_train_list = files_list[:int(files_count*TRAIN_COEF)]
@@ -63,13 +61,11 @@ def main():
             print ("Please specify images folder")  
         else:
             common.make_directories(directories_list)
-            
-            # TODO explain 1, 3, 5
-            # TODO explain 0, 2, 4 
-            # You  will not remember this next time
             #for annotations
+            #directories_list[1], directories_list[3], directories_list[5]-train/val/test annotations folders
             populate_train_test_val(namespace.annotations, (directories_list[1], directories_list[3], directories_list[5]))
             #for images
+            #directories_list[0], directories_list[2], directories_list[4]-train/val/test images folders
             populate_train_test_val(namespace.images, (directories_list[0], directories_list[2], directories_list[4]))
         exit(0)
     exit(-1)
