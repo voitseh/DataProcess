@@ -28,6 +28,8 @@ args = vars(ap.parse_args())
 
 # struct for bound boxes, gender and age
 class BdgBoxAndLabelsArgs:
+    # TODO should be age, gender, bound_box (not boxes)
+    # one face has one bound box, one gender, one age
     bound_boxes = None
     gender = None
     age = None
@@ -56,7 +58,7 @@ def show_gender(image,gender,point):
 def show_age(image,age,point):
     text = "{}".format(int(age))
     draw_text(image,text,point)
-
+# TODO make 'Image' - as argument (alow to create window with different names)
 def show_image(image):
     img = 'Image'
     cv2.imshow(img, image)
@@ -86,10 +88,21 @@ def load_image(filename, flags=-1):
         return None
     return cv2.imread(filename, flags)
 
+# TODO next description make like below
 # shows labels:gender and/or age.Paremeters:image,BdgBoxAndLabelsArgs.Returns:None
+
 def show_labels(image,annotation) :
+    '''
+        Shows item annotations.
+        Args:
+            image : 
+            annotations:
+            
+        
+    '''
     deltaX = 20
     deltaY = 5
+    # TODO why bounding box[0]
     xn, yn, xx, yx = annotation.bound_boxes[0]
     if annotation.gender != None:
         show_gender(image,annotation.gender,(xn,yn-deltaY))
@@ -115,6 +128,7 @@ def parse_from_pascal_voc_format(filename):
                           represents bounding box cornets coordinates
     """
     bounding_box = []
+    # TODO change open() to with ... as f:
     in_file = open(filename)
     tree=etree.parse(in_file)
     root = tree.getroot()
@@ -130,6 +144,8 @@ def parse_from_pascal_voc_format(filename):
         bounding_box = [xn,yn,xx,yx]
         objects.bound_boxes.append(bounding_box)
         gender = obj.find('gender')
+        # TODO do find gender like you do with age
+        # objects.gender = float(obj.find('gender').text)
         if gender != None:
             if gender.text != "None":
                 objects.gender = gender
@@ -159,6 +175,9 @@ def parse_json_annotation(filename):
     f.close()
     return objects
  
+# TODO same problem
+# Find a solution to make this function smaller. 
+# YOu have two similar parts of code in if .., else ..
 def _process_dir(annotations_folder, images_folder, index=-1):
     images = sorted(list_files(images_folder, '.jpg'))
     if annotations_folder.split('_')[0] == 'datasets/JSON':
