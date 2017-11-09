@@ -90,22 +90,20 @@ def show_annotation(filename, annotation):
         Shows item annotations.
         Args:
             filename: image file
-            annotation: bound_box,gender,age
-        Returns:
-            None
+            annotation: list of objects(bound_box, gender, age)
     '''
     deltaX = 20
     deltaY = 5
     image = load_image(filename, cv2.IMREAD_COLOR)
     if image is None:
         return
-    for bnd_box in annotation.bound_box:
-        xn, yn, xx, yx = bnd_box
-        if annotation.gender != None:
-            show_gender(image,annotation.gender,(xn,yn-deltaY))
-        if annotation.age != None:
-            show_age(image,annotation.age,(xn+deltaX,yn-deltaY))
-        result = draw_bounding_box(image, bnd_box, center_with_size=False)
+    for obj in annotation: 
+        xn, yn, xx, yx = obj.bound_box
+        if obj.gender != None:
+            show_gender(image,obj.gender,(xn,yn-deltaY))
+        if obj.age != None:
+            show_age(image,obj.age,(xn+deltaX,yn-deltaY))
+        result = draw_bounding_box(image, obj.bound_box, center_with_size=False)
     show_image('Image',result)
 
 def parse_voc_annotation(filename):
@@ -115,66 +113,54 @@ def parse_voc_annotation(filename):
                           represents bounding box cornets coordinates
     """
     bounding_box = []
-    with open(filename) as out_file:
-        in_file = open(filename)
+    with open(filename) as in_file:
         tree=etree.parse(in_file)
         root = tree.getroot()
-        objects = BdgBoxAndLabelsArgs()
-        objects.bound_box = []
+        index =-1
+        objects = []
         for obj in root.iter('object'):
-            current = list()              
+            index +=1             
             xmlbox = obj.find('bndbox')
             xn = int(float(xmlbox.find('xmin').text))
             xx = int(float(xmlbox.find('xmax').text))
             yn = int(float(xmlbox.find('ymin').text))
             yx = int(float(xmlbox.find('ymax').text))
-            bounding_box = [xn,yn,xx,yx]
-            objects.bound_box.append(bounding_box)
-            gender = obj.find('gender')
-            if gender != None:
-                if gender.text != "None":
-                    objects.gender = gender
-                else:
-                    objects.gender = "nan"
-                objects.age = float(obj.find('age').text)
+            objects.append(BdgBoxAndLabelsArgs())
+            objects[index].bound_box = [xn,yn,xx,yx]
+            gender = obj.find('gender').text
+            objects[index].gender = "nan" if gender == "None" else gender
+            objects[index].age = float(obj.find('age').text)
     return objects
-   
+
 def parse_json_annotation(filename):
     with open(filename) as f:
-        objects = BdgBoxAndLabelsArgs()
-        objects.bound_box = []
+        index = -1
+        objects = []
         for line in f:
             line = line.replace("'", '"')
             line = line.replace("nan", 'null')
             my_dict = json.loads(line)
             for obj in my_dict["objects"]:
-                objects.bound_box.append(obj["bounding_box"])
+                index +=1
+                objects.append(BdgBoxAndLabelsArgs())
+                objects[index].bound_box = obj["bounding_box"]
                 if "gender" in obj:
-                    if obj["gender"] != None:
-                        objects.gender = float(obj["gender"])
-                    else:
-                        objects.gender = "nan"
+                    objects[index].gender = "nan" if obj["gender"] == None else float(obj["gender"])
                 if "age" in obj:
-                    objects.age = float(obj["age"])
+                    objects[index].age = float(obj["age"])
+                
     return objects
  
 def process_ann(annotations_folder, ann_format, image):
-    annotations = sorted(list_files(annotations_folder, ann_format))
-    if annotations != []:
-        annfile = "{}{}{}".format(annotations_folder,get_filename(image),ann_format)
-        if os.path.isfile(annfile) and os.path.isfile(image):
-            if ann_format == '.xml':
-                objects = parse_voc_annotation(annfile)
-            elif ann_format == '.json':
-                objects = parse_json_annotation(annfile)
+    annfile = "{}{}{}".format(annotations_folder,get_filename(image),ann_format)
+    if os.path.isfile(annfile) and os.path.isfile(image):
+        objects = parse_voc_annotation(annfile) if ann_format == '.xml' else parse_json_annotation(annfile)
     return objects
 
 def _process_dir(annotations_folder, images_folder, index=-1):
     images = sorted(list_files(images_folder, '.jpg'))
-    if annotations_folder.split('_')[0] == 'datasets/JSON':
-        objects = process_ann(annotations_folder, '.json', images[index])
-    else:
-        objects = process_ann(annotations_folder, '.xml', images[index])
+    ann_format = '.json' if annotations_folder.split('_')[0] == 'datasets/JSON' else '.xml'
+    objects = process_ann(annotations_folder, ann_format, images[index])
     show_annotation(images[index], objects)
 
 def main(): 
