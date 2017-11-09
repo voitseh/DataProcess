@@ -20,9 +20,9 @@ namespace = ap.parse_args(sys.argv[1:])
 
 TRAIN_COEF = 0.6
 VAL_COEF = 0.8
-dst_tuple = namedtuple("dst_tuple", "train_dst val_dist test_dist")
-
-directories_list = ["{}/train/images/".format(namespace.annotations.split('single')[0]), "{}/train/annotations/".format(namespace.annotations.split('single')[0]), "{}/val/images/".format(namespace.annotations.split('single')[0]), "{}/val/annotations/".format(namespace.annotations.split('single')[0]), "{}/test/images/".format(namespace.annotations.split('single')[0]), "{}/test/annotations/".format(namespace.annotations.split('single')[0]) ]
+ALLOWED_EXTENSIONS = ('.json', '.xml', '.png', '.jpg')
+ann_root_dir = namespace.annotations.split('single')[0]
+directories_dict = {'train/img':"{}/train/images/".format(ann_root_dir),'train/ann':"{}/train/annotations/".format(ann_root_dir),'val/img':"{}/val/images/".format(ann_root_dir),'val/ann':"{}/val/annotations/".format(ann_root_dir),'test/img':"{}/test/images/".format(ann_root_dir),'test/ann':"{}/test/annotations/".format(ann_root_dir),}
 
 def copy_files(files, src, dst):
     for file in files:
@@ -43,7 +43,7 @@ def randomize(items):
     return result
 
 def populate_train_test_val(src, dst_tuple):
-    files_list = [file for file in os.listdir(src) if (file.endswith(".json") or file.endswith(".xml") or file.endswith(".jpg") or file.endswith(".png"))]
+    files_list = [file for file in os.listdir(src) if file.endswith(ALLOWED_EXTENSIONS)] 
     files_count = len(files_list)
     files_list = randomize(files_list)
     files_train_list = files_list[:int(files_count*TRAIN_COEF)]
@@ -60,13 +60,10 @@ def main():
         if not namespace.images:
             print ("Please specify images folder")  
         else:
-            common.make_directories(directories_list)
-            #for annotations
-            #directories_list[1], directories_list[3], directories_list[5]-train/val/test annotations folders
-            populate_train_test_val(namespace.annotations, (directories_list[1], directories_list[3], directories_list[5]))
-            #for images
-            #directories_list[0], directories_list[2], directories_list[4]-train/val/test images folders
-            populate_train_test_val(namespace.images, (directories_list[0], directories_list[2], directories_list[4]))
+            for key, value in directories_dict.items():
+                common.make_directory(value)
+            populate_train_test_val(namespace.annotations, (directories_dict['train/ann'], directories_dict['val/ann'], directories_dict['test/ann']))
+            populate_train_test_val(namespace.images, (directories_dict['train/img'], directories_dict['val/img'], directories_dict['test/img']))
         exit(0)
     exit(-1)
 
