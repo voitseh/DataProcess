@@ -49,6 +49,7 @@ def draw_text(image,text,point,font=cv2.FONT_HERSHEY_SIMPLEX,size=0.5,color=[0, 
     thick = int(sum(image.shape[:2]) // 600)
     cv2.putText(image,text,(point[0]-thick, point[1] -thick),font,size,color,thick)
 
+# Do not draw NAN when there is no gender
 def show_gender(image,gender,point):
     text = "{}".format("M" if float(gender)>0.5 else "NAN" if gender == "nan"  else "F")
     draw_text(image,text,point)
@@ -151,14 +152,16 @@ def parse_json_annotation(filename):
                 
     return objects
  
+# TODO explain function
 def process_ann(annotations_folder, ann_format, image):
     annfile = "{}{}{}".format(annotations_folder,get_filename(image),ann_format)
     if os.path.isfile(annfile) and os.path.isfile(image):
         objects = parse_voc_annotation(annfile) if ann_format == '.xml' else parse_json_annotation(annfile)
     return objects
-
+# TODO explain function
 def _process_dir(annotations_folder, images_folder, index=-1):
     images = sorted(list_files(images_folder, '.jpg'))
+    # TODO no 'datasets/JSON' should be here
     ann_format = '.json' if annotations_folder.split('_')[0] == 'datasets/JSON' else '.xml'
     objects = process_ann(annotations_folder, ann_format, images[index])
     show_annotation(images[index], objects)
